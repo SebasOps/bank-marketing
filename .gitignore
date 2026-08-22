@@ -1,0 +1,30 @@
+# Entorno virtual
+venv/
+env/
+*.venv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Datos
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep              
+!data/processed/.gitkeep
+
+# Modelos entrenados (si son pesados)
+models/*.pkl
+models/*.joblib
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
