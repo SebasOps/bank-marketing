@@ -55,6 +55,8 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 ## Installation
 
+* ¿Clonar el repositorio? Partir de que se tiene visual studio code, git, python, docker, e igual dejar los link de cada uno o videos, pero no explicarlo nosotros
+
 ---
 
 ## Data Ingestion
@@ -101,7 +103,7 @@ Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y
 El equipo se conforma por:
 
 * Sebastián Aguilar Benavides
-* María Paula ...
+* María Paula Elizondo Herrera
 
 Donde cada uno de los integrantes aportó todas y cada una de las diferentes secciones.
 
@@ -110,7 +112,7 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 ## Comandos reproducibles 
 
 * git clone https://github.com/SebasOps/bank-marketing/
-* pip install -r requirements.tx
+* pip install -r requirements.txt
 * python src/ingestion/ingest.py
 * 
 * 
