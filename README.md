@@ -1,7 +1,28 @@
 # Bank Marketing
 
 ---
-## Variables del dataset
+
+## Business Problem
+
+### Objetivo 
+El objetivo que se presenta para este caso son los siguietes: 
+* Identifizar clientes con mayor probabilidad de contratar un depósito a plazo
+
+Para lograrlo el desarrollo se enfocará en encontrar la configuración correcta para maximizar el acurracy del modelo de clasificación.
+
+---
+## Dataset
+
+Los datos del dataset están relacionados con campañas de marketing directo de una institución bancaria portuguesa. Las campañas de marketing se basaban en llamadas telefónicas.
+
+* Fuente: UC Irvine - Maching Learning Repository
+* Características: 16
+* Instancias: 45211
+* Tipos de caraterísticas: Categóricas y Enteros
+* Área: Negocios
+
+### Variables del dataset
+
 | Variable | Rol | Tipo | Demografía | Descripción | Unidades | Valores Faltantes |
 |----------|------|------|-------------|-------------|-----------|-------------------|
 | age | Feature | Entero | Edad | Edad del cliente. | | No |
@@ -23,14 +44,20 @@
 | y | Target | Binario | | ¿El cliente se suscribió a un depósito a plazo fijo? | | No |
 
 ---
-## Objetivo 
-El objetivo que se presenta para este caso son los siguietes: 
-* Identifizar clientes con mayor probabilidad de contratar un depósito a plazo
 
-Para lograrlo el desarrollo se enfocará en encontrar la configuración correcta para maximizar el acurracy del modelo de clasificación.
+## Architecture
 
 ---
-## Ingesta de datos
+
+## Repository Structure
+
+---
+
+## Installation
+
+---
+
+## Data Ingestion
 
 El dataset (Bank Marketing, UCI ML Repository, id=222) se obtiene mediante:
 
@@ -40,12 +67,55 @@ python src/ingestion/ingest.py
 
 Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y los guarda en `data/raw/bank_marketing.csv`. No se requiere ningún archivo local previo. Script es completamente reproducible.
 
----
 ### Requisitos
 - Instalar dependencias: `pip install -r requirements.txt`
 
+---
 
- 
+## Training
+
+---
+
+## MLflow
+
+---
+
+## Docker
+
+---
+
+## API
+
+---
+
+## Monitoring
+
+---
+
+## Results
+
+---
+
+## Team
+
+El equipo se conforma por:
+
+* Sebastián Aguilar Benavides
+* María Paula ...
+
+Donde cada uno de los integrantes aportó todas y cada una de las diferentes secciones.
+
+---
+
+## Comandos reproducibles 
+
+* git clone https://github.com/SebasOps/bank-marketing/
+* pip install -r requirements.tx
+* python src/ingestion/ingest.py
+* 
+* 
+
+---
 ---
 # Notas:
 DESCARTAR 'duration' DEL MODELO
