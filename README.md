@@ -114,7 +114,7 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 * git clone https://github.com/SebasOps/bank-marketing/
 * pip install -r requirements.txt
 * python src/ingestion/ingest.py
-* 
+* python src/cleaning/clean.py
 * 
 
 ---
