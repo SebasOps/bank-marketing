@@ -13,16 +13,8 @@ Nota. Algunas de las funciones de limpieza se hicieron con el fin de automatizar
 
 # Imports
 import pandas as pd
-import numpy as np
 from pathlib import Path
 
-
-# Ruta raíz del proyecto (cwd = donde se encuentra el notebook; .parent = ruta padre, eso da la ruta raíz)
-PROJECT_ROOT = Path.cwd().parent
-
-RAW_PATH = PROJECT_ROOT / "data" / "raw" / "bank_marketing.csv"
-
-df = pd.read_csv(RAW_PATH)
 
 # Constantes
 COLUMNAS_CATEGORICAS = [
@@ -84,7 +76,7 @@ def resolve_types(df):
 
 
 # ---------------------------------------------------------------------------------------------------------
-# Función que corre todas las funciones de limpieza (reproducicle python src/cleaning/clean.py)
+# Función que corre todas las funciones de limpieza (reproducicle)
 
 def clean_data(df):
     df = rename_columns(df)
@@ -93,3 +85,26 @@ def clean_data(df):
     df = resolve_types(df)
 
     return df
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Función que corre solo cuando se corre directamente este .py (python src/quality/clean.py)
+
+if __name__ == "__main__":
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    RAW_PATH = PROJECT_ROOT / "data" / "raw" / "bank_marketing.csv"
+
+    df = pd.read_csv(RAW_PATH)
+    df_limpio = clean_data(df)
+
+    # Carpeta donde se almacena los datos procesados
+    PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Ruta de salida
+    output_path = PROCESSED_DIR / "bank_marketing.csv"
+
+    # Guardar dataset
+    df_limpio.to_csv(output_path, index=False)
+
+    print(f"Dataset limpio guardado en: {output_path}")
