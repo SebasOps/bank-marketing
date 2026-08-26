@@ -51,11 +51,51 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 ## Repository Structure
 
+### Estructura 
+El repositorio en Github del proyecto tiene la siguiente estructura:
+
+bank-marketing/
+├── src/
+│   ├── data-quality/
+|   |   ├── clean.py
+|   |   └── gates.py
+│   └── ingestion/
+|       └── ingest.py
+|
+├── notebooks/
+|   ├── data-quality.ipynb
+|   └── data-eda.ipynb
+|
+├── tests/
+|   └── test_clean_gates.py
+|
+├── .gitignore
+├── requirements.txt
+└── README.md
+
+### Ramas
+Para el desarrollo se usaron las siguientes ramás: 
+* main
+* develop
+* feature/data-cleaning
+* ...
+
 ---
 
 ## Installation
 
-* ¿Clonar el repositorio? Partir de que se tiene visual studio code, git, python, docker, e igual dejar los link de cada uno o videos, pero no explicarlo nosotros
+### Programas necesarios
+Para ejecutar este proyecto de MLOps se debe contar con los programas que serán mencionados, la documentación de este proyecto partirá de que se tienen ya instalados y configurados, pero igualmente se adjuntan los links de instalación, mas no serán explicados: 
+* Python - https://www.python.org/downloads/ 
+* Git - https://git-scm.com/install/ 
+* Visual Studio Code - https://code.visualstudio.com/download?_exp_download=fb315fc982
+
+### Clonar repositorio
+Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Github: 
+1. Abrir una nueva terminal en Visual Studio Code (o el editor de código de preferencia).
+2. Escribir y correr el siguiente comando: git clone https://github.com/SebasOps/bank-marketing
+
+### Entorno virtual ??
 
 ---
 
@@ -111,11 +151,11 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 
 ## Comandos reproducibles 
 
-* git clone https://github.com/SebasOps/bank-marketing/
 * pip install -r requirements.txt
 * python src/ingestion/ingest.py
-* python src/cleaning/clean.py
-* 
+* python src/data-quality/clean.py
+* python src/data-quality/gates.py
+* python src/tests/test_clean_gates.py
 
 ---
 ---
