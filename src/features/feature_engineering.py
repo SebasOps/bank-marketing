@@ -9,6 +9,8 @@ y producción.
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import RobustScaler
+from imblearn.pipeline import Pipeline as ImbPipeline
+from imblearn.over_sampling import SMOTE
 
 
 # Variables numéricas utilizadas por los modelos
@@ -66,5 +68,41 @@ def build_preprocessor(incluir_escalado):
     else:
         remainder = "passthrough"  # numéricas pasan sin tocar
 
-
     return ColumnTransformer(transformers=transformers, remainder=remainder)
+
+
+def build_pipeline(model, incluir_escalado, incluir_smote=False, random_seed=42):
+    """
+    Construye el pipeline completo (preprocesador + resampling opcional + modelo)
+    utilizado tanto en entrenamiento como en producción.
+
+    Parameters
+    ----------
+    model : estimator de sklearn
+        Modelo ya instanciado (ej. KNeighborsClassifier(n_neighbors=5)).
+    incluir_escalado : bool
+        True para modelos sensibles a la escala (KNN, Regresión Logística).
+        False para modelos basados en árboles (Decision Tree, Random Forest).
+    incluir_smote : bool, default=False
+        Si True, agrega SMOTE antes del modelo para balancear las clases.
+        Solo se ejecuta durante el entrenamiento (.fit()); no afecta .predict().
+        Pensado para modelos sin soporte nativo de class_weight, como KNN.
+    random_seed : int, default=42
+        Semilla utilizada por SMOTE para garantizar reproducibilidad.
+
+    Returns
+    -------
+    imblearn.pipeline.Pipeline
+        Pipeline reutilizable para entrenamiento y predicción.
+    """
+
+    preprocessor = build_preprocessor(incluir_escalado)
+
+    steps = [("preprocessor", preprocessor)]
+
+    if incluir_smote:
+        steps.append(("smote", SMOTE(random_state=random_seed)))
+
+    steps.append(("model", model))
+
+    return ImbPipeline(steps)
