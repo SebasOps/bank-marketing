@@ -183,6 +183,14 @@ Queda ir modificando el random forest- 15? - n_estimators
 
 ## MLflow
 
+Se registra como candidate el modelo que resultó ganador en la comparación entre RF/DT/KNN/RL según PR-AUC, recall y F1 (ver experiment tracking)
+
+Pasa a validation porque su desempeño en rf-final-holdout es PR-AUC=X, recall=Y, f1=Z, consistente con lo observado en los resultados con test_thr
+* run_id de rf-final-holdout: d6de4f7b11424ee3990329dfd95a465e 
+* Umbral: 0.45
+
+Se promueve a production tras validar que no hay regresión respecto a la comparación inicial entre los 4 modelos y que el equipo aprueba el resultado del holdout final
+
 ---
 
 ## Docker
