@@ -19,6 +19,7 @@ from pathlib import Path
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # Calcular ruta raíz y agregarla a sys.path para poder importar desde src/.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent 
@@ -52,6 +53,16 @@ y = encode_target(df["y"])
 # Split
 X_train, X_test, y_train, y_test = split_data(X, y)
 
+# Partición del test en dos particiones adicionales
+# - _test_thr : para decidir umbral
+# - _test_final : reportar métricas del modelo con el umbral seleccionado y datos no vistos anteriormente
+X_test_thr, X_test_final, y_test_thr, y_test_final = train_test_split(
+    X_test, y_test,
+    test_size=0.5,
+    stratify=y_test,
+    random_state=RANDOM_SEED
+)
+
 # Versión
 DATA_VERSION = get_data_version(PROCESSED_PATH)
 
@@ -70,9 +81,6 @@ UMBRALES = [0.45, 0.4]
 # Pipeline del modelo ganador
 rf_pipeline = mlflow.sklearn.load_model(f"runs:/{RUN_ID_GANADOR}/model")
 
-# predict_proba solo se calcula una vez, el umbral se aplica después sobre las mismas probabilidades
-y_proba = rf_pipeline.predict_proba(X_test)[:, 1]
-
 
 # --------------------------------------------
 # Experimentos - Modelo ganador 
@@ -89,8 +97,31 @@ for umbral in UMBRALES:
             "feature_set": FEATURE_SET,
             "data_version": DATA_VERSION,
             },
-        X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test,
+        X_train=X_train, y_train=y_train, X_test=X_test_thr, y_test=y_test_thr,
         run_name=f"rf-threshold_{umbral}",
         already_fitted=True,
         threshold=umbral
     )
+
+
+# --------------------------------------------
+# Evaluación final con el umbral elegido
+
+UMBRAL_FINAL = 0.45
+
+run_experiment(
+    pipeline=rf_pipeline,
+    model_name="RandomForest",
+    params={
+        "max_depth": MAX_DEPTH_GANADOR,
+        "n_estimators": N_ESTIMATORS_GANADOR,
+        "class_weight": CLASS_BALANCED,
+        "random_seed": RANDOM_SEED,
+        "feature_set": FEATURE_SET,
+        "data_version": DATA_VERSION,
+        },
+    X_train=X_train, y_train=y_train, X_test=X_test_final, y_test=y_test_final,
+    run_name="rf-final-holdout",
+    already_fitted=True,
+    threshold=UMBRAL_FINAL
+)
