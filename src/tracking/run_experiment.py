@@ -1,3 +1,19 @@
+"""
+Función centralizada de tracking MLflow.
+
+Encapsula el ciclo completo de un experimento (fit, predicción, cálculo de
+métricas, y logging de parámetros/métricas/artifacts) en un único punto
+reutilizable por los cuatro modelos del proyecto, evitando duplicar la
+lógica para tracking MLflow.
+
+Soporta dos modos de uso:
+- Entrenamiento normal (already_fitted=False): entrena el pipeline recibido
+  y lo registra como artifact en el run.
+- Evaluación sobre un modelo ya entrenado (already_fitted=True): no
+  reentrena; se usa para análisis posteriores al modelo ganador, como la
+  evaluación con un umbral de decisión distinto al default.
+"""
+
 # Imports
 import mlflow
 import mlflow.sklearn
@@ -9,12 +25,16 @@ from sklearn.metrics import (
 )
 
 
-def run_experiment(pipeline, model_name, params, X_train, y_train, X_test, y_test, run_name):
+def run_experiment(
+    pipeline, model_name, params, X_train, y_train, X_test, y_test, run_name,
+    already_fitted=False, threshold=0.5
+):
     with mlflow.start_run(run_name=run_name):
-        pipeline.fit(X_train, y_train)
+        if not already_fitted:
+            pipeline.fit(X_train, y_train)
 
-        y_pred = pipeline.predict(X_test)
         y_proba = pipeline.predict_proba(X_test)[:, 1]
+        y_pred = (y_proba >= threshold).astype(int)
 
         metrics = {
             "f1": f1_score(y_test, y_pred),
@@ -26,6 +46,7 @@ def run_experiment(pipeline, model_name, params, X_train, y_train, X_test, y_tes
         }
 
         mlflow.log_param("algorithm", model_name)
+        mlflow.log_param("decision_threshold", threshold)
         for k, v in params.items():
             mlflow.log_param(k, v)
 
@@ -37,12 +58,8 @@ def run_experiment(pipeline, model_name, params, X_train, y_train, X_test, y_tes
         mlflow.log_figure(fig, "confusion_matrix.png")
         plt.close(fig)
 
-        mlflow.sklearn.log_model(
-            pipeline,
-            "model",
-            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE
-        )
+        if not already_fitted:
+            mlflow.sklearn.log_model(pipeline, "model")
 
         print(f"[{run_name}] " + " | ".join(f"{k}={v:.4f}" for k, v in metrics.items()))
-
         return metrics
