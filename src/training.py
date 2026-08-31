@@ -152,7 +152,8 @@ for max_depth in VALORES_MAX_DEPTH_DT:
 from sklearn.neighbors import KNeighborsClassifier
 
 """
-Duante el feature-engineering ... # TODO
+Duante el feature-engineering se decidió usar los valores
+15 y 33 para k.
 """
 
 VALORES_K = [15, 31]
@@ -180,7 +181,11 @@ for k in VALORES_K:
     )
 
 """
-Se observó que ... # TODO
+Observando los resultados de las métricas de los experimentos
+de KNN, se considera mejor el experimento que usó k=33, 
+a pesar de que los resultados no son muy convincentes se 
+probará el modelo con incluir_smote=NO_INCLUIR_SMOTE_KNN 
+(no se aplica el balanceo SMOTE).
 """
 
 VALORES_K = 31
