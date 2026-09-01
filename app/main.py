@@ -15,6 +15,8 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from mlflow import MlflowClient
 from pydantic import BaseModel, Field
+from typing import Literal
+
 
 # Calcular ruta raíz y agregarla a sys.path para poder importar desde src/.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent 
@@ -54,25 +56,25 @@ except Exception as e:
 # Datos de entrada
 # ---------------------------------------------------------------
 
-class ClientFeatures(BaseModel): 
-    age: int = Field(alias="age") 
+class ClientFeatures(BaseModel):
+    age: int = Field(alias="age", ge=18, le=100)
     job: str = Field(alias="job")
-    marital: str = Field(alias="marital") 
+    marital: str = Field(alias="marital")
     education: str = Field(alias="education")
-    default: str = Field(alias="default")
+    default: Literal["yes", "no"] = Field(alias="default")
     balance: int = Field(alias="balance")
-    housing: str = Field(alias="housing")
-    loan: str = Field(alias="loan")
+    housing: Literal["yes", "no"] = Field(alias="housing")
+    loan: Literal["yes", "no"] = Field(alias="loan")
     contact: str = Field(alias="contact")
-    day: int = Field(alias="day")
-    month: str = Field(alias="month") 
-    campaign: int = Field(alias="campaign") 
-    pdays: int = Field(alias="pdays") 
-    previous: int = Field(alias="previous")
+    day: int = Field(alias="day", ge=1, le=31)
+    month: str = Field(alias="month")
+    campaign: int = Field(alias="campaign", ge=0)
+    pdays: int = Field(alias="pdays", ge=-1)
+    previous: int = Field(alias="previous", ge=0)
     poutcome: str = Field(alias="poutcome")
 
     class Config:
-            populate_by_name = True
+        populate_by_name = True
 
 
 # ---------------------------------------------------------------
