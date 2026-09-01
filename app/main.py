@@ -13,8 +13,7 @@ from pathlib import Path
 import mlflow.sklearn
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from mlflow import MlflowClient
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
 
 
@@ -73,8 +72,7 @@ class ClientFeatures(BaseModel):
     previous: int = Field(alias="previous", ge=0)
     poutcome: str = Field(alias="poutcome")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 # ---------------------------------------------------------------
