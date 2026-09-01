@@ -4,8 +4,8 @@
 
 ## Business Problem
 
-### Objetivo 
-El objetivo que se presenta para este caso son los siguietes: 
+### Objetivo
+El objetivo que se presenta para este caso son los siguietes:
 * Identifizar clientes con mayor probabilidad de contratar un depósito a plazo
 
 Para lograrlo el desarrollo se enfocará en encontrar la configuración correcta para maximizar el acurracy del modelo de clasificación.
@@ -51,61 +51,85 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 ## Repository Structure
 
-### Estructura 
-El repositorio en Github del proyecto tiene la siguiente estructura:
+### Estructura
+El repositorio en Github de este proyecto tiene la siguiente estructura:
 
+```python
 bank-marketing/
-├── src/
-│   ├── data-quality/
-|   |   ├── clean.py
-|   |   └── gates.py
-│   └── ingestion/
-|       └── ingest.py
-|
+├── app/
+│   └── main.py
 ├── notebooks/
-|   ├── data-quality.ipynb
-|   └── data-eda.ipynb
-|
-├── tests/
-|   └── test_clean_gates.py
-|
+│   ├── data-eda.ipynb
+│   ├── data-quality.ipynb
+│   └── feature-engineering.ipynb
+├── src/
+│   ├── evaluation/
+│   │   └── threshold_analysis.py
+│   ├── features/
+│   │   └── build_features.py
+│   ├── ingestion/
+│   │   └── ingest.py
+│   ├── pipelines/
+│   │   └── split.py
+│   ├── quiality/
+│   │   ├── clean.py
+│   │   └── gates.py
+│   ├── tracking/
+│   │   ├── config.py
+│   │   └── run_experiment.py
+│   └── training.py
+├── test/
+│   ├── __init__.py
+│   ├── test_api.py
+│   ├── test_data.py
+│   ├── test_model.py
+│   └── test_clean_gates.py
+├── .dockerignore
 ├── .gitignore
+├── Dockerfile
+├── export_model.py
+├── bank.db
+├── requirements-api.txt
+├── requirements-txt.txt
 ├── requirements.txt
 └── README.md
+```
+
 
 ### Ramas
-Para el desarrollo se usaron las siguientes ramás: 
-* main
-* develop
-* feature/data-cleaning
-* ...
+Para el desarrollo se usaron las siguientes ramás:
+* **main** : rama de producción, unicamente se sube acá si en la rama 'develop' se confirma funcionalidad completa.
+* **develop** : rama para probar todo en conjunto.
+* **feature/data-cleaning** : se realizó la limpieza, data quality gates y ...
+* **feature/model** : experimentos, modelo ganador, análisis de umbrales.
+* **feature/api** : construcción de app.py (API), creación de la imagen y contenedor en Docker y pruebas de datos, modelo y API.
+
 
 ---
 
 ## Installation
 
 ### Programas necesarios
-Para ejecutar este proyecto de MLOps se debe contar con los programas que serán mencionados, la documentación de este proyecto partirá de que se tienen ya instalados y configurados, pero igualmente se adjuntan los links de instalación, mas no serán explicados: 
-* Python - https://www.python.org/downloads/ 
-* Git - https://git-scm.com/install/ 
+Para ejecutar este proyecto de MLOps se debe contar con los programas que serán mencionados, la documentación de este proyecto partirá de que se tienen ya instalados y configurados, pero igualmente se adjuntan los links de instalación, mas no serán explicados:
+* Python - https://www.python.org/downloads/
+* Git - https://git-scm.com/install/
 * Visual Studio Code - https://code.visualstudio.com/download?_exp_download=fb315fc982
 
 ### Clonar repositorio
-Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Github: 
+Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Github:
 1. Abrir una nueva terminal en Visual Studio Code (o el editor de código de preferencia).
 2. Escribir y correr el siguiente comando: git clone https://github.com/SebasOps/bank-marketing
 
-### Entorno virtual ??
+### Entorno virtual
+1. Crear el entorno virtual ejecutando el siguiente comando: ```python venv -m mlflow-project```
+2. Activar el entorno virtual ejecutando el siguiente comando: ```mlflow-projec/Scripts/activate```
+3. Instalar dependencias ejecutando el siguiente comando: ```pip install -r requirements.txt```
 
 ---
 
 ## Data Ingestion
 
-El dataset (Bank Marketing, UCI ML Repository, id=222) se obtiene mediante:
-
-​```bash
-python src/ingestion/ingest.py
-​```
+El dataset se obtiene mediante la ejecución del siguiente comando: ```python src/ingestion/ingest.py```
 
 Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y los guarda en `data/raw/bank_marketing.csv`. No se requiere ningún archivo local previo. Script es completamente reproducible.
 
@@ -116,17 +140,18 @@ Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y
 
 ## Training
 
-### Mediciones a evaluar: 
-* PR-AUC: será el criterio principal para la selección entre modelos/configuraciones. Esta métrica indica que tan bien el modelo distinge "yes" en general, además es ideal para evitar un número "bonito" que pueden dar otras métricas como accuracy por el desbalanceo de las clases.
-* Recall: segunda prioridad. En una campaña de marketing, no detectar a alguien que sí se iba a suscribir (falso negativo) suele costar más que llamar de más a alguien que no se suscribe (falso positivo), y esto es lo que nos refleja la métrica, de los "yes" reales, cual porcentaje detectó el modelo.
-* F1: se utilizará para revisar que un posible recall alto no se deba por una precisión baja, por ende, un F1 bajo y un recall alto signifiaría que el recall se debe a que el modelo simplemente predice "yes" para todo.
-* Accuracy: se identificó que no es la métrica ideal por el desbalanceo de las clases, pero igualmente se reportará. 
+### Mediciones a evaluar:
+* **PR-AUC**: será el criterio principal para la selección entre modelos/configuraciones. Esta métrica indica que tan bien el modelo distinge "yes" en general, además es ideal para evitar un número "bonito" que pueden dar otras métricas como accuracy por el desbalanceo de las clases.
+* **Recall**: segunda prioridad. En una campaña de marketing, no detectar a alguien que sí se iba a suscribir (falso negativo) suele costar más que llamar de más a alguien que no se suscribe (falso positivo), y esto es lo que nos refleja la métrica, de los "yes" reales, cual porcentaje detectó el modelo.
+* **F1**: se utilizará para revisar que un posible recall alto no se deba por una precisión baja, por ende, un F1 bajo y un recall alto signifiaría que el recall se debe a que el modelo simplemente predice "yes" para todo.
+* **Accuracy**: se identificó que no es la métrica ideal por el desbalanceo de las clases, pero igualmente se reportará.
 
 
 ### Hiperparámetros utilizados en los experimentos
 
-Las siguientes constantes se declararon en src/tracking/config.py para importarlas a src/training.py y src/evaluation/threshold_analysis.py evitando duplicidad
+Las siguientes constantes se declararon en ```src/tracking/config.py``` para importarlas a ```src/training.py``` y ```src/evaluation/threshold_analysis.py``` evitando duplicidad:
 
+```python
 RANDOM_SEED = 42
 CLASS_BALANCED = "balanced"
 
@@ -135,58 +160,95 @@ NO_INCLUIR_SMOTE_KNN = False
 
 INCLUIR_ESCALADO = True
 NO_INCLUIR_ESCALADO = False
+```
 
-Todos los modelos utilizan RANDOM_SEED para conservar los mismos resultados sin importar quien ejecute los experimentos asegurando reproducibilidad.
+
+Todos los experimentos utilizan ```RANDOM_SEED``` para conservar los mismos resultados sin importar quien ejecute los experimentos asegurando reproducibilidad y consistencia.
 
 
 ### Modelos/configuraciones probados
 
 #### Random Forest
 * Experimento 1: max_depth=5, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
-* Experimento 2: max_depth=10, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO 
-
-Se observa que el experimento 2 presentó resultados mejores en las métricas:
-
-* Experimento 1: 
-* Experimento 2:
+* Experimento 2: max_depth=10, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 
 #### Decision Tree
 
 * Experimento 3: max_depth=10, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 * Experimento 4: max_depth=15, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 
-Se observó que el experimento 3 presentó mejores resultados en las métricas entre los experimentos de Decision Tree: 
-
-* Experimento 3: 
-* Experimento 4:
-
 #### KNN
 
-* Experimento 5: 
-* Experimento 6:
-* Experimento 7:
+* Experimento 5: n_neighbors=15, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
+* Experimento 6: n_neighbors=31, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
+
+Se observó que entre el experimento 5 y el 6, este segundo presentó mejores resultados, por ende, se realizó el mismo ejercicio, pero sin aplicarle la técnica SMOTE de balanceo.
+
+* Experimento 7: n_neighbors=31, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=NO_INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
 
 #### Logistic Regression
 
-* Experimento 8: 
-* Experimento 9:
+* Experimento 8: C=0.4, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
+* Experimento 9: C=0.6, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
 
-* RF 10 depth mejor que 5 
-* DT 10 depth mejor que 15
-* KNN
-* RL
+### Resultados obtenidos
+De los primeros 9 experimentos, inicialmente se hizo una comparación entre los experimentos del mismo modelo. Se observó que el experimento 2 fue el que mejores resultados presentó: 
 
-Ganó el RF de 10 depth
-Queda ir modificando el random forest- 15? - n_estimators
+* PR-AUC = 0.43
+* Recall = 0.62
+* F1 = 0.43
+* Accuracy = 0.81
+
+Aunque fue el mejor entre los experimentos realizados no significó que fuera excelente. Para ver si el modelo mejoraba, se realizaron más experimentos basados en este candidato.
+
+### Experimentos en base al candidato
+
+Primero, se varió el hiperparámetros n_estimator, corriendo dos nuevos ejercicios, uno con 200 y otro con 300. El valor de n_estimator es la cantidad de árboles distintos que el modelo de random forest realiza para obtener sus clasificaciones:
+
+* Experimento 10: max_depth=5, n_estimator=200, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
+* Experimento 11: max_depth=5, n_estimator=300, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
+
+Realmente no hubo mejora sustancial en comparación al modelo candidato, por ende, se probó modificando hiperparámetro, esta vez fue min_samples_leaf, se realizaron los siguientes experimentos:
+
+* Experimento 12: max_depth=10, n_estimators=100, min_samples_leaf=5, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO
+* Experimento 13: max_depth=10, n_estimators=100, min_samples_leaf=10, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO
+* Experimento 14: max_depth=10, n_estimators=100, min_samples_leaf=15, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO
+
+Con estos cambios en el hiperparámetro min_samples_leaf hubo una regresión con respecto al modelo candidato base, el cual usa min_samples_leaf=1 por defecto. Por ese motivo se descartó dichos cambios y se mantiene el modelo candidato sin modificación. 
+
+A este punto se decidió no modificar más hiperparámetros, unicamente se haría un análisis de umbral basándonos en que el recall nos demostraba que el modelo aun no capturaba un gran porcentaje de los registros "yes" reales (sí contrataron el depósito); se realizarón los siguientes experimentos:
+
+* Experimento 15: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.45
+* Experimento 16: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.40
+
+Se observó que ambos experimentos aumentaban el 
+
+* Experimento 17: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.45
 
 ---
 
 ## MLflow
 
+### Levantar UI
+Activar y acceder a la interfaz de MLflow
+1. Con el vnev corriendo, ejecutar el siguiente comando: mlflow server --backend-store-uri sqlite:///bank.db --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000
+2. En el navegador, ingresar a: http://127.0.0.1:5000
+
+### Correr experimentos
+Inicialmente se correrán 9 experimentos, mencionados en la sección anterior *Training*, para ello, se debe ejecutar el siguiente comando en la terminal:
+
+​```python src/training.py```
+
+Se podrán visualizar en ....
+
+### Registrar el modelo ganador
+...
+
+## Esto en la doc ejec/tecn
 Se registra como candidate el modelo que resultó ganador en la comparación entre RF/DT/KNN/RL según PR-AUC, recall y F1 (ver experiment tracking)
 
 Pasa a validation porque su desempeño en rf-final-holdout es PR-AUC=X, recall=Y, f1=Z, consistente con lo observado en los resultados con test_thr
-* run_id de rf-final-holdout: d6de4f7b11424ee3990329dfd95a465e 
+* run_id de rf-final-holdout: d6de4f7b11424ee3990329dfd95a465e
 * Umbral: 0.45
 
 Se promueve a production tras validar que no hay regresión respecto a la comparación inicial entre los 4 modelos y que el equipo aprueba el resultado del holdout final
@@ -195,34 +257,136 @@ Se promueve a production tras validar que no hay regresión respecto a la compar
 
 ## Docker
 
+La imagen se construye asumiendo que el modelo ya fue exportado localmente (ver sección de *MLflow*).
+
+### Dockerfile: decisiones documentadas
+
+* **Base `python:3.10-slim`**: se evita la imagen "full" de Python para mantener el tamaño de la imagen razonable.
+* **Orden de capas**: `requirements-api.txt` se copia e instala antes que el código.
+* **`requirements-api.txt` en vez de `requirements.txt`**: la API no necesita `matplotlib`, `ucimlrepo`, `scipy`, u otros. Instalar solo lo que `app/main.py` importa para reducir el tamaño de la imagen.
+* **Se copian tres carpetas**: `app/` (API), `src/` (porque `app/main.py` reutiliza `lower_case()` de `src/quality/clean.py`), y `model_artifact/` (modelo ya exportado + `metadata.json` con `model_version` y `decision_threshold`).
+* **`HEALTHCHECK`**: permite que Docker (o un orquestador) determine si el servicio está realmente vivo, no solo si el proceso arrancó golpeando `/health`, que a su vez confirma que el modelo cargó correctamente.
+* **`CMD` con `uvicorn` en `0.0.0.0`**: necesario para que el contenedor acepte conexiones externas al puerto mapeado (`--host 127.0.0.1` no funcionaría desde fuera del contenedor).
+
+
+### Pre-requisito: exportar el modelo
+Para continuar, se debe exportar el modelo ganador. Para ello ejecute el siguiente comando en la terminal: <br>
+​```python export_model.py​```
+
 ### Dependencias que utiliza docker
 Archivo: requirements-api.txt
 
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-mlflow==3.15.1
-scikit-learn==1.7.2
-pyarrow==25.0.1
-pydantic==2.9.2
-pandas==2.3.3
+fastapi==0.115.0    <br>
+uvicorn[standard]==0.30.6   <br>
+mlflow==3.15.1  <br>
+scikit-learn==1.7.2 <br>
+pyarrow==25.0.1 <br>
+pydantic==2.9.2 <br>
+pandas==2.3.3   <br>
 imbalanced-learn==0.14.2
 
-### Pasos para crear 
+### Build reproducible
 
-Crear imagen 
-* docker build -t bank-marketing-api .
+1. Crear imagen <br>
+​```docker build -t bank-marketing-api .​```
 
-Crear contenedor de la imagen
-* docker run -p 8000:8000 bank-marketing-api
+1. Crear contenedor de la imagen <br>
+​```docker run -p 8000:8000 bank-marketing-api​```
 
-Peso de la imagen
-* DISK USAGE: 1.22GB
-* CONTENT SIZE: 274M
-          
+1. Verificación
+    1. En el navegador, ingresar en el buscador lo siguiente: http://localhost:8000/health
+    2. Debe observar:
+        ```json
+       {"status": "ok", "model_version": "1"}
+        ```
+        Si da error http 503, debe revisar los logs del contenedor para ver el `load_error`.
 
 ---
 
 ## API
+
+### Endpoints
+* ​```GET /health​```: verifica que el servicio y el modelo cargaron correctamente
+* ​```POST /predict​```: recibe features del cliente, devuelve predicción + probabilidad
+
+
+### Levantar la API con Docker
+1. Obtener el id del contenedor con el siguiente comando: ​```docker ps -a​```
+2. Reemplaza '<container_id>' por el id del contenedor en el siguinte comando:  ```docker start <container_id>```
+3. Ejecutar el comando en la terminal
+4. Probar la API ingresando a http://localhost:8000/health
+
+### Decisión de arquitectura: carga del modelo al iniciar, no por request
+El modelo, su versión (`model_version`) y el umbral de decisión (`decision_threshold`) se leen una sola vez, al arrancar el proceso, no en cada llamada a `/predict`. Esto evita I/O repetido, haciendo la respuesta más rápida y predecible.
+
+La carga está envuelta en un `try/except`:
+- Si tiene éxito: `modelo`, `MODEL_VERSION` y `DECISION_THRESHOLD` quedan disponibles en memoria para toda la vida del proceso.
+- Si falla: `modelo = None` y el motivo se guarda en `load_error`, en vez de que el contenedor crashee silenciosamente al arrancar. Esto permite que `/health` devuelva un `503` con el error real, en lugar de que la API quede en un estado ambiguo.
+
+
+### Contrato de entrada (`ClientFeatures`)
+
+El endpoint `/predict` espera un JSON con los siguientes 15 campos:
+
+| Campo | Tipo | Restricción |
+|---|---|---|
+| age | int | ​```18 <= age <= 100​``` |
+| job | str | — |
+| marital | str | — |
+| education | str | — |
+| default | str | "yes" o "no" |
+| balance | int | — |
+| housing | str | "yes" o "no" |
+| loan | str | "yes" o "no" |
+| contact | str | — |
+| day | int | ​```1 <= day <= 31​``` |
+| month | str | — |
+| campaign | int | >= 0 |
+| pdays | int | >= -1 |
+| previous | int | >= 0 |
+| poutcome | str | — |
+
+* **Por qué `Literal["yes", "no"]` en `default`, `housing`, `loan`**: cualquier valor fuera de ese dominio (ej. `"maybe"`, `"1"`, `""`) es rechazado automáticamente con un `422 Unprocessable Entity`, sin necesidad de validación manual en el endpoint. Esto es lo que cubren los casos de input inválido en `test_api.py`.
+
+* **Nota sobre `alias` y `populate_by_name=True`**: en este modelo el `alias` de cada campo coincide con su nombre, por lo que actualmente no cambia el comportamiento. Se dejó explícito por si en el futuro el JSON de entrada usa nombres distintos a los atributos internos (ej. nombres con espacios o mayúsculas).
+
+
+### Contrato de salida (`PredictionResponse`)
+
+```json
+{
+  "prediction": 0,
+  "probability": 0.1234,
+  "model_version": "1"
+}
+```
+
+- `prediction`: clase predicha (`0` = no contrata, `1` = contrata), resultado de comparar `probability` contra `DECISION_THRESHOLD` (0.45).
+- `probability`: probabilidad de la clase positiva (`"yes"`), redondeada a 4 decimales. Es la misma base sobre la que se fijó el umbral durante el análisis de threshold, no una probabilidad recalculada con otro criterio.
+- `model_version`: versión del modelo en el MLflow Registry que generó la predicción, para trazabilidad.
+
+
+### Ejemplo reproducible de request
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "age": 35, "job": "technician", "marital": "married",
+    "education": "professional.course", "default": "no", "balance": 1500,
+    "housing": "yes", "loan": "no", "contact": "cellular",
+    "day": 15, "month": "may", "campaign": 1,
+    "pdays": -1, "previous": 0, "poutcome": "nonexistent"
+  }'
+```
+
+### Punto abierto: `probability: float | None`
+
+El tipo de `PredictionResponse.probability` permite `None`, pero el código actual siempre devuelve un `float` (nunca hay una rama que retorne `None`). Antes de dejarlo en el README como definitivo, conviene decidir:
+- Si nunca puede ser `None` en la práctica → simplificar el tipo a `float` (más honesto con el contrato real).
+- Si existe algún escenario donde sí debería ser `None` → documentarlo explícitamente aquí y agregar el caso a `test_api.py`.
+
+
 
 ---
 
@@ -245,8 +409,11 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 
 ---
 
-## Comandos reproducibles 
+## Comandos reproducibles
 
+### Entorno virtual
+* python -m venv mlflow-project
+* mlflow-project/Scripts/activate
 * pip install -r requirements.txt
 
 ### Datos
@@ -255,12 +422,15 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 * python src/data-quality/gates.py
 * python src/tests/test_clean_gates.py
 
+### MLflow
+* mlflow server --backend-store-uri sqlite:///bank.db --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000
+
 ### Experimentos y modelos
 * python src/training.py
 * python src/evalution/threshold_analysis.py
 * python export_model.py
 
-### Dockers 
+### Dockers
 * docker build -t bank-marketing-api .
 * docker run -p 8000:8000 bank-marketing-api
 
@@ -269,7 +439,7 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 * pytest tests/test_data.py -v
 * pytest tests/test_model.py -v
 
-O bien, para correr todos: 
+O bien, para correr todos:
 
 * pytest tests/ -v
 
