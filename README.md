@@ -195,6 +195,31 @@ Se promueve a production tras validar que no hay regresión respecto a la compar
 
 ## Docker
 
+### Dependencias que utiliza docker
+Archivo: requirements-api.txt
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+mlflow==3.15.1
+scikit-learn==1.7.2
+pyarrow==25.0.1
+pydantic==2.9.2
+pandas==2.3.3
+imbalanced-learn==0.14.2
+
+### Pasos para crear 
+
+Crear imagen 
+* docker build -t bank-marketing-api .
+
+Crear contenedor de la imagen
+* docker run -p 8000:8000 bank-marketing-api
+
+Peso de la imagen
+* DISK USAGE: 1.22GB
+* CONTENT SIZE: 274M
+          
+
 ---
 
 ## API
@@ -223,12 +248,30 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 ## Comandos reproducibles 
 
 * pip install -r requirements.txt
+
+### Datos
 * python src/ingestion/ingest.py
 * python src/data-quality/clean.py
 * python src/data-quality/gates.py
 * python src/tests/test_clean_gates.py
+
+### Experimentos y modelos
 * python src/training.py
 * python src/evalution/threshold_analysis.py
+* python export_model.py
+
+### Dockers 
+* docker build -t bank-marketing-api .
+* docker run -p 8000:8000 bank-marketing-api
+
+### Testing
+* pytest tests/test_api.py -v
+* pytest tests/test_data.py -v
+* pytest tests/test_model.py -v
+
+O bien, para correr todos: 
+
+* pytest tests/ -v
 
 ---
 
