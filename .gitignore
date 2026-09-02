@@ -28,3 +28,6 @@ logs/
 # IDE
 .vscode/
 .idea/
+
+mlartifacts/
+model_artifact/
