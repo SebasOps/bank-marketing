@@ -203,7 +203,7 @@ with st.form("predict_form"):
             "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
         )
         pdays = st.number_input(
-            "Días desde que el cliente fue contactado por una campaña anterior", min_value=-1, value=None, step=1,
+            "Días desde contacto de una campaña anterior", min_value=-1, value=None, step=1,
             placeholder="-1 si nunca fue contactado",
         )
         previous = st.number_input(
