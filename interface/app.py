@@ -178,16 +178,16 @@ with st.form("predict_form"):
     with c3:
         default = st.selectbox(
             "¿Tiene incumplimiento de pago?", options=["no", "yes"], index=None,
-            placeholder="Select",
+            placeholder="Seleccionar",
         )
     c4, c5 = st.columns(2)
     with c4:
         housing = st.selectbox(
-            "¿Tiene préstamo hipotecario?", options=["no", "yes"], index=None, placeholder="Select",
+            "¿Tiene préstamo hipotecario?", options=["no", "yes"], index=None, placeholder="Seleccionar",
         )
     with c5:
         loan = st.selectbox(
-            "¿Tiene préstamo personal?", options=["no", "yes"], index=None, placeholder="Select",
+            "¿Tiene préstamo personal?", options=["no", "yes"], index=None, placeholder="Seleccionar",
         )
 
     st.markdown('<div class="section-label">Campañas de marketing</div>', unsafe_allow_html=True)
@@ -196,8 +196,8 @@ with st.form("predict_form"):
         contact = st.text_input(
             "Contactado mediante", value="", placeholder="ej. cellular, telephone",
         )
-        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Select day")
-        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Select month")
+        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Seleccione un día")
+        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Seleccione un mes")
     with c6:
         campaign = st.number_input(
             "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
