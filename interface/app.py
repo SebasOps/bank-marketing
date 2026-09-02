@@ -167,23 +167,25 @@ with st.form("predict_form"):
         education = st.text_input(
             "Educación", value="", placeholder="ej. basic.6y, high.school, university.degree, unknown",
         )
+        
+
+    st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
+    c2, c3 = st.columns(2)
+    with c2:
+        balance = st.number_input(
+            "Balance", value=None, step=1, placeholder="ej. 1500",
+        )
+    with c3:
         default = st.selectbox(
             "¿Tiene incumplimiento de pago?", options=["no", "yes"], index=None,
             placeholder="Select",
         )
-        
-
-    st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
-    c2, c3, c4 = st.columns(3)
-    with c2:
-        balance = st.number_input(
-                    "Balance", value=None, step=1, placeholder="ej. 1500",
-                )
-    with c3:
+    c4, c5 = st.columns(2)
+    with c4:
         housing = st.selectbox(
             "¿Tiene préstamo hipotecario?", options=["no", "yes"], index=None, placeholder="Select",
         )
-    with c4:
+    with c5:
         loan = st.selectbox(
             "¿Tiene préstamo personal?", options=["no", "yes"], index=None, placeholder="Select",
         )
@@ -198,14 +200,14 @@ with st.form("predict_form"):
         month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Select month")
     with c6:
         campaign = st.number_input(
-            "Número de contactos realizados durante esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
+            "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
         )
         pdays = st.number_input(
             "Días desde que el cliente fue contactado por una campaña anterior", min_value=-1, value=None, step=1,
             placeholder="-1 si nunca fue contactado",
         )
         previous = st.number_input(
-            "Número de contactos anteriores a esta campaña", min_value=0, value=None, step=1, placeholder="ej. 0",
+            "Contactos anteriores a esta campaña", min_value=0, value=None, step=1, placeholder="ej. 0",
         )
 
     poutcome = st.text_input(
