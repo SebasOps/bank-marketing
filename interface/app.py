@@ -26,7 +26,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------
-# Estilos (minimalista, un solo acento, tipografía limpia)
+# Estilos (minimalista, un solo acento, inputs blancos forzados)
 # ---------------------------------------------------------------
 
 st.markdown(
@@ -36,7 +36,7 @@ st.markdown(
         --accent: #2563eb;
         --text-main: #111827;
         --text-muted: #6b7280;
-        --border: #e5e7eb;
+        --border: #d1d5db;
         --bg-card: #ffffff;
     }
 
@@ -61,6 +61,31 @@ st.markdown(
         background-color: var(--bg-card);
     }
 
+    /* Títulos de cada input, siempre visibles */
+    label[data-testid="stWidgetLabel"] p {
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: var(--text-main) !important;
+    }
+
+    /* Forzar fondo blanco + texto oscuro en todos los inputs */
+    .stTextInput input,
+    .stNumberInput input,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="popover"] {
+        background-color: #ffffff !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput input::placeholder,
+    .stNumberInput input::placeholder {
+        color: #9ca3af !important;
+        opacity: 1 !important;
+    }
+    ul[role="listbox"] { background-color: #ffffff !important; }
+    li[role="option"] { color: var(--text-main) !important; }
+
     .stButton > button, .stFormSubmitButton > button {
         background-color: var(--accent);
         color: white; border: none; border-radius: 8px;
@@ -76,10 +101,6 @@ st.markdown(
     .result-no  { background-color: #fef2f2; border-color: #fecaca; }
     .result-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; }
     .result-meta { color: var(--text-muted); font-size: 0.82rem; }
-
-    div[data-baseweb="select"] > div, .stNumberInput input, .stTextInput input {
-        border-radius: 8px !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -116,10 +137,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+MONTHS = ["jan", "feb", "mar", "apr", "may", "jun",
+          "jul", "aug", "sep", "oct", "nov", "dec"]
+DAYS = list(range(1, 32))
+
 # ---------------------------------------------------------------
 # Formulario
-# Campos yes/no -> selectbox fijo (coincide con Literal["yes","no"] del API).
-# Resto -> input libre (texto o número), sin restringir opciones.
+# - default / housing / loan -> selectbox fijo (Literal["yes","no"] del API)
+# - day / month -> selectbox con opciones válidas del dataset
+# - resto -> input libre (texto o número), sin valores precargados
 # ---------------------------------------------------------------
 
 with st.form("predict_form"):
@@ -127,41 +153,86 @@ with st.form("predict_form"):
     st.markdown('<div class="section-label">Perfil del cliente</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
-        age = st.number_input("age", min_value=18, max_value=100, value=40, step=1)
-        job = st.text_input("job", value="admin.")
-        marital = st.text_input("marital", value="married")
+        age = st.number_input(
+            "Age", min_value=18, max_value=100, value=None,
+            step=1, placeholder="e.g. 40",
+        )
+        job = st.text_input(
+            "Job", value="", placeholder="e.g. admin., technician, blue-collar",
+        )
+        marital = st.text_input(
+            "Marital status", value="", placeholder="e.g. married, single, divorced",
+        )
     with c2:
-        education = st.text_input("education", value="secondary")
-        default = st.selectbox("default", options=["no", "yes"])
-        balance = st.number_input("balance", value=0, step=1)
+        education = st.text_input(
+            "Education", value="", placeholder="e.g. primary, secondary, tertiary",
+        )
+        default = st.selectbox(
+            "Default (crédito en mora)", options=["no", "yes"], index=None,
+            placeholder="Select",
+        )
+        balance = st.number_input(
+            "Balance", value=None, step=1, placeholder="e.g. 1500",
+        )
 
     st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
     c3, c4 = st.columns(2)
     with c3:
-        housing = st.selectbox("housing", options=["no", "yes"])
+        housing = st.selectbox(
+            "Housing loan", options=["no", "yes"], index=None, placeholder="Select",
+        )
     with c4:
-        loan = st.selectbox("loan", options=["no", "yes"])
+        loan = st.selectbox(
+            "Personal loan", options=["no", "yes"], index=None, placeholder="Select",
+        )
 
     st.markdown('<div class="section-label">Campaña de contacto</div>', unsafe_allow_html=True)
     c5, c6 = st.columns(2)
     with c5:
-        contact = st.text_input("contact", value="cellular")
-        day = st.number_input("day", min_value=1, max_value=31, value=15, step=1)
-        month = st.text_input("month", value="may")
+        contact = st.text_input(
+            "Contact type", value="", placeholder="e.g. cellular, telephone",
+        )
+        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Select day")
+        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Select month")
     with c6:
-        campaign = st.number_input("campaign", min_value=0, value=1, step=1)
-        pdays = st.number_input("pdays", min_value=-1, value=-1, step=1)
-        previous = st.number_input("previous", min_value=0, value=0, step=1)
+        campaign = st.number_input(
+            "Campaign contacts", min_value=0, value=None, step=1, placeholder="e.g. 1",
+        )
+        pdays = st.number_input(
+            "Days since last contact (pdays)", min_value=-1, value=None, step=1,
+            placeholder="-1 if never contacted",
+        )
+        previous = st.number_input(
+            "Previous contacts", min_value=0, value=None, step=1, placeholder="e.g. 0",
+        )
 
-    poutcome = st.text_input("poutcome", value="unknown")
+    poutcome = st.text_input(
+        "Previous outcome", value="", placeholder="e.g. unknown, failure, success",
+    )
 
     submitted = st.form_submit_button("Predecir")
 
 # ---------------------------------------------------------------
-# Llamada a la API + resultado
+# Validación + llamada a la API + resultado
 # ---------------------------------------------------------------
 
 if submitted:
+    raw_fields = {
+        "age": age, "job": job, "marital": marital, "education": education,
+        "default": default, "balance": balance, "housing": housing, "loan": loan,
+        "contact": contact, "day": day, "month": month, "campaign": campaign,
+        "pdays": pdays, "previous": previous, "poutcome": poutcome,
+    }
+
+    missing = [
+        name for name, value in raw_fields.items()
+        if value is None or (isinstance(value, str) and value.strip() == "")
+    ]
+
+    if missing:
+        st.error("Completa los siguientes campos antes de continuar: " + ", ".join(missing))
+        st.stop()
+
     payload = {
         "age": int(age),
         "job": job,
@@ -221,3 +292,4 @@ if submitted:
         st.metric(label="probability", value=f"{proba:.2%}")
     else:
         st.caption("La API no devolvió probabilidad para esta respuesta.")
+    
