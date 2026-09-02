@@ -174,7 +174,7 @@ with st.form("predict_form"):
         
 
     st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
-    c2, c3, c4 = st.columns(2)
+    c2, c3, c4 = st.columns(3)
     with c2:
         balance = st.number_input(
                     "Balance", value=None, step=1, placeholder="ej. 1500",
