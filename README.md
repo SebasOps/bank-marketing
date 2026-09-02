@@ -2,6 +2,8 @@
 
 ---
 
+
+
 ## Business Problem
 
 ### Objetivo
@@ -10,7 +12,12 @@ El objetivo que se presenta para este caso son los siguietes:
 
 Para lograrlo el desarrollo se enfocará en encontrar la configuración correcta para maximizar el acurracy del modelo de clasificación.
 
+
+
 ---
+
+
+
 ## Dataset
 
 Los datos del dataset están relacionados con campañas de marketing directo de una institución bancaria portuguesa. Las campañas de marketing se basaban en llamadas telefónicas.
@@ -20,6 +27,7 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 * Instancias: 45211
 * Tipos de caraterísticas: Categóricas y Enteros
 * Área: Negocios
+
 
 ### Variables del dataset
 
@@ -43,11 +51,19 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 | poutcome | Feature | Categórico | | Resultado de la campaña de marketing anterior ('failure','nonexistent','success'). | | Sí |
 | y | Target | Binario | | ¿El cliente se suscribió a un depósito a plazo fijo? | | No |
 
+
+
 ---
+
+
 
 ## Architecture
 
+
+
 ---
+
+
 
 ## Repository Structure
 
@@ -105,7 +121,10 @@ Para el desarrollo se usaron las siguientes ramás:
 * **feature/api** : construcción de app.py (API), creación de la imagen y contenedor en Docker y pruebas de datos, modelo y API.
 
 
+
 ---
+
+
 
 ## Installation
 
@@ -115,17 +134,23 @@ Para ejecutar este proyecto de MLOps se debe contar con los programas que serán
 * Git - https://git-scm.com/install/
 * Visual Studio Code - https://code.visualstudio.com/download?_exp_download=fb315fc982
 
+
 ### Clonar repositorio
 Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Github:
 1. Abrir una nueva terminal en Visual Studio Code (o el editor de código de preferencia).
 2. Escribir y correr el siguiente comando: git clone https://github.com/SebasOps/bank-marketing
+
 
 ### Entorno virtual
 1. Crear el entorno virtual ejecutando el siguiente comando: ```python venv -m mlflow-project```
 2. Activar el entorno virtual ejecutando el siguiente comando: ```mlflow-projec/Scripts/activate```
 3. Instalar dependencias ejecutando el siguiente comando: ```pip install -r requirements.txt```
 
+
+
 ---
+
+
 
 ## Data Ingestion
 
@@ -133,10 +158,15 @@ El dataset se obtiene mediante la ejecución del siguiente comando: ```python sr
 
 Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y los guarda en `data/raw/bank_marketing.csv`. No se requiere ningún archivo local previo. Script es completamente reproducible.
 
+
 ### Requisitos
 - Instalar dependencias: `pip install -r requirements.txt`
 
+
+
 ---
+
+
 
 ## Training
 
@@ -161,7 +191,6 @@ NO_INCLUIR_SMOTE_KNN = False
 INCLUIR_ESCALADO = True
 NO_INCLUIR_ESCALADO = False
 ```
-
 
 Todos los experimentos utilizan ```RANDOM_SEED``` para conservar los mismos resultados sin importar quien ejecute los experimentos asegurando reproducibilidad y consistencia.
 
@@ -191,6 +220,7 @@ Se observó que entre el experimento 5 y el 6, este segundo presentó mejores re
 * Experimento 8: C=0.4, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
 * Experimento 9: C=0.6, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
 
+
 ### Resultados obtenidos
 De los primeros 9 experimentos, inicialmente se hizo una comparación entre los experimentos del mismo modelo. Se observó que el experimento 2 fue el que mejores resultados presentó: 
 
@@ -200,6 +230,7 @@ De los primeros 9 experimentos, inicialmente se hizo una comparación entre los 
 * Accuracy = 0.81
 
 Aunque fue el mejor entre los experimentos realizados no significó que fuera excelente. Para ver si el modelo mejoraba, se realizaron más experimentos basados en este candidato.
+
 
 ### Experimentos en base al candidato
 
@@ -221,11 +252,30 @@ A este punto se decidió no modificar más hiperparámetros, unicamente se harí
 * Experimento 15: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.45
 * Experimento 16: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.40
 
-Se observó que ambos experimentos aumentaban el 
+Se observó que ambos experimentos aumentaban el recall a costa de la precisión y el F1 respecto al modelo candidato base. El PR-AUC también fue menor que en el candidato base (0.435 vs ~0.41), pero esta diferencia no puede atribuirse al cambio de umbral, ya que esta métrica es invariante al punto de corte (se calcula sobre las probabilidades predichas, no sobre la clase discreta resultante). Se confirma esto comparando los Experimentos 15 y 16 entre sí: ambos usan el mismo conjunto de test y distinto umbral (0.45 y 0.40), y su PR-AUC es prácticamente es idéntico (0.41). La diferencia de PR-AUC frente al candidato base se explica, en cambio, porque este último se evaluó sobre `X_test` completo, mientras que los Experimentos 15 y 16 se evaluaron sobre `X_test_thr`, la mitad reservada para el análisis de umbral.
 
 * Experimento 17: max_depth=10, n_estimators=100, class_weight=CLASS_BALANCED, incluir_escalado=NO_INCLUIR_ESCALADO, threshold=0.45
 
+Este último experimento contiene los mismos hiperparámetros que el *Experimento 15*, pero observamos que mejoraba en comparación al mismo. La comparación final del modelo base candidato y el *Experimento 17* el cual tiene el umbral de 0.45 es la siguiente
+
+| | Candidato base | Modelo umbral 0.45 |
+|-|----------------|--------------------|
+| PR-AUC | 0.43 | 0.46 |
+| Recall | 0.62 | 0.72 |
+| F1 | 0.43 | 0.40 |
+| Accuracy | 0.81 | 0.75 |
+
+Cabe aclarar que esta comparación no es sobre el mismo conjunto de datos: el candidato base (Experimento 2) fue evaluado sobre el conjunto de test completo, mientras que el Experimento 17 fue evaluado únicamente sobre `X_test_final`, la mitad del test original reservada como holdout no vista durante la selección del umbral (la otra mitad, `X_test_thr`, se usó para los Experimentos 15 y 16). Esta partición se hizo intencionalmente para evitar que el umbral se eligiera y evaluara sobre los mismos datos, pero implica que el Experimento 17 se midió sobre una muestra de menor tamaño que el candidato base.
+
+Viendo sus métricas se observa que, PR-AUC fue mayor con el umbral de 0.45 (aclarado anteriormente que se debe a que usan distintos datos de test), esto se puede deber a que como capturó mayor cantidad de "yes" reales, logró identificar mejor dicha clase; se ve que el recall igualmente aumentó, por ende, logró capturar la mayor porcentaje de los "yes" reales; por otro lado, tanto F1 como accuracy bajo, esto debido a la baja en la precisión del modelo.
+
+La decisión fue tomaba en base al objetivo: "identificar correctamente clientes con mayor probabilidad de conversión". Conocíamos claramente la solicitud de "maximizar accuracy", pero al identificando el gran desbalance de las clases se entendió que podría no ser la métrica que mejor refleje el comportamiento del modelo.
+
+
+
 ---
+
+
 
 ## MLflow
 
@@ -253,7 +303,11 @@ Pasa a validation porque su desempeño en rf-final-holdout es PR-AUC=X, recall=Y
 
 Se promueve a production tras validar que no hay regresión respecto a la comparación inicial entre los 4 modelos y que el equipo aprueba el resultado del holdout final
 
+
+
 ---
+
+
 
 ## Docker
 
@@ -301,7 +355,11 @@ imbalanced-learn==0.14.2
         ```
         Si da error http 503, debe revisar los logs del contenedor para ver el `load_error`.
 
+
+
 ---
+
+
 
 ## API
 
@@ -390,15 +448,27 @@ El tipo de `PredictionResponse.probability` permite `None`, pero el código actu
 
 ---
 
+
+
 ## Monitoring
 
+
+
 ---
+
+
 
 ## Results
 
+
+
 ---
 
+
+
 ## Team
+
+
 
 El equipo se conforma por:
 
@@ -407,7 +477,11 @@ El equipo se conforma por:
 
 Donde cada uno de los integrantes aportó todas y cada una de las diferentes secciones.
 
+
+
 ---
+
+
 
 ## Comandos reproducibles
 
