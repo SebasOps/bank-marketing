@@ -9,12 +9,14 @@ Endpoint:
 # Imports
 import sys
 import json
+import time
 from pathlib import Path
 import mlflow.sklearn
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
+from datetime import datetime, timezone
 
 
 # Calcular ruta raíz y agregarla a sys.path para poder importar desde src/.
@@ -22,6 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT)) 
 
 from src.quality.clean import lower_case
+from src.monitoring.system_metrics import compute_system_metrics
 
 
 # Ruta del modelo
@@ -34,6 +37,33 @@ app = FastAPI(
     description="Sirve un modelo scikit-learn entrenado y registrado en MLflow.",
     version="1.0.0",
 )
+
+
+# Middleware 
+# Intercepta cada request, mide latencia 
+LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+REQUEST_LOG_PATH = LOG_DIR / "requests.jsonl"
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        latency_ms = (time.perf_counter() - start) * 1000
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "endpoint": request.url.path,
+            "method": request.method,
+            "status_code": status_code,
+            "latency_ms": round(latency_ms, 2),
+        }
+        with open(REQUEST_LOG_PATH, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
 
 
 # El modelo, su versión y el umbral se leen UNA sola vez al iniciar el contenedor
@@ -88,6 +118,11 @@ class PredictionResponse(BaseModel):
 # ---------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------
+
+@app.get("/metrics")
+def metrics():
+    return compute_system_metrics(LOG_DIR)
+
 
 @app.get("/health")
 def health():
