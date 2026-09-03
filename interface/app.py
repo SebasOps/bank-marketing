@@ -111,7 +111,7 @@ st.markdown(
 # ---------------------------------------------------------------
 
 if "api_url" not in st.session_state:
-    st.session_state.api_url = "https://bank-marketing-mlops.onrender.com"
+    st.session_state.api_url = "http://localhost:8000"
 
 with st.sidebar:
     st.markdown("**Configuración**")
@@ -154,64 +154,60 @@ with st.form("predict_form"):
     c1, c2 = st.columns(2)
     with c1:
         age = st.number_input(
-            "Edad", min_value=18, max_value=100, value=None,
-            step=1, placeholder="ej. 40",
+            "Age", min_value=18, max_value=100, value=None,
+            step=1, placeholder="e.g. 40",
         )
         job = st.text_input(
-            "Trabajo", value="", placeholder="ej. admin., technician, blue-collar",
+            "Job", value="", placeholder="e.g. admin., technician, blue-collar",
         )
         marital = st.text_input(
-            "Estado civil", value="", placeholder="ej. married, single, divorced, unknown",
+            "Marital status", value="", placeholder="e.g. married, single, divorced",
         )
     with c2:
         education = st.text_input(
-            "Educación", value="", placeholder="ej. basic.6y, high.school, university.degree, unknown",
+            "Education", value="", placeholder="e.g. primary, secondary, tertiary",
         )
-        
+        default = st.selectbox(
+            "Default (crédito en mora)", options=["no", "yes"], index=None,
+            placeholder="Select",
+        )
+        balance = st.number_input(
+            "Balance", value=None, step=1, placeholder="e.g. 1500",
+        )
 
     st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
-    c2, c3 = st.columns(2)
-    with c2:
-        balance = st.number_input(
-            "Balance", value=None, step=1, placeholder="ej. 1500",
-        )
+    c3, c4 = st.columns(2)
     with c3:
-        default = st.selectbox(
-            "¿Tiene incumplimiento de pago?", options=["no", "yes"], index=None,
-            placeholder="Seleccionar",
-        )
-    c4, c5 = st.columns(2)
-    with c4:
         housing = st.selectbox(
-            "¿Tiene préstamo hipotecario?", options=["no", "yes"], index=None, placeholder="Seleccionar",
+            "Housing loan", options=["no", "yes"], index=None, placeholder="Select",
         )
-    with c5:
+    with c4:
         loan = st.selectbox(
-            "¿Tiene préstamo personal?", options=["no", "yes"], index=None, placeholder="Seleccionar",
+            "Personal loan", options=["no", "yes"], index=None, placeholder="Select",
         )
 
-    st.markdown('<div class="section-label">Campañas de marketing</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Campaña de contacto</div>', unsafe_allow_html=True)
     c5, c6 = st.columns(2)
     with c5:
         contact = st.text_input(
-            "Contactado mediante", value="", placeholder="ej. cellular, telephone",
+            "Contact type", value="", placeholder="e.g. cellular, telephone",
         )
-        day = st.selectbox("Día del último contacto", options=DAYS, index=None, placeholder="Seleccione un día")
-        month = st.selectbox("Mes del último contacto", options=MONTHS, index=None, placeholder="Seleccione un mes")
+        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Select day")
+        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Select month")
     with c6:
         campaign = st.number_input(
-            "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
+            "Campaign contacts", min_value=0, value=None, step=1, placeholder="e.g. 1",
         )
         pdays = st.number_input(
-            "Días desde contacto de una campaña anterior", min_value=-1, value=None, step=1,
-            placeholder="-1 si nunca fue contactado",
+            "Days since last contact (pdays)", min_value=-1, value=None, step=1,
+            placeholder="-1 if never contacted",
         )
         previous = st.number_input(
-            "Contactos anteriores a esta campaña", min_value=0, value=None, step=1, placeholder="ej. 0",
+            "Previous contacts", min_value=0, value=None, step=1, placeholder="e.g. 0",
         )
 
     poutcome = st.text_input(
-        "Resultado de la campaña de marketing anterior", value="", placeholder="ej. failure, success, nonexistent",
+        "Previous outcome", value="", placeholder="e.g. unknown, failure, success",
     )
 
     submitted = st.form_submit_button("Predecir")
