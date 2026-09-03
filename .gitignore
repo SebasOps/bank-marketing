@@ -28,3 +28,10 @@ logs/
 # IDE
 .vscode/
 .idea/
+
+# Artifacts
+mlartifacts/
+*.pkl
+
+# Database
+*.db
