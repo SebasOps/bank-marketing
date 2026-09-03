@@ -111,7 +111,7 @@ st.markdown(
 # ---------------------------------------------------------------
 
 if "api_url" not in st.session_state:
-    st.session_state.api_url = "http://localhost:8000"
+    st.session_state.api_url = "https://bank-marketing-mlops.onrender.com"
 
 with st.sidebar:
     st.markdown("**Configuración**")
