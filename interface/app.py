@@ -196,8 +196,8 @@ with st.form("predict_form"):
         contact = st.text_input(
             "Contactado mediante", value="", placeholder="ej. cellular, telephone",
         )
-        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Seleccione un día")
-        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Seleccione un mes")
+        day = st.selectbox("Día del último contacto", options=DAYS, index=None, placeholder="Seleccione un día")
+        month = st.selectbox("Mes del último contacto", options=MONTHS, index=None, placeholder="Seleccione un mes")
     with c6:
         campaign = st.number_input(
             "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
