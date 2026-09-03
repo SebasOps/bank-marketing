@@ -301,8 +301,7 @@ if submitted:
             '<div class="section-label">Probabilidad de suscripción</div>',
             unsafe_allow_html=True,
         )
-        st.progress(min(max(proba, 0.0), 1.0))
-        st.metric(label="probability", value=f"{proba:.2%}")
+        st.metric(label="Probabilidad", value=f"{proba:.2%}")
     else:
         st.caption("La API no devolvió probabilidad para esta respuesta.")
 
