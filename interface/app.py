@@ -99,8 +99,8 @@ st.markdown(
         border: 1px solid var(--border); margin-top: 1.4rem; }
     .result-yes { background-color: #ecfdf5; border-color: #a7f3d0; }
     .result-no  { background-color: #fef2f2; border-color: #fecaca; }
-    .result-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; }
-    .result-meta { color: var(--text-muted); font-size: 0.82rem; }
+    .result-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-main) !important; }
+    .result-meta { color: var(--text-muted) !important; font-size: 0.82rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -111,7 +111,7 @@ st.markdown(
 # ---------------------------------------------------------------
 
 if "api_url" not in st.session_state:
-    st.session_state.api_url = "http://localhost:8000"
+    st.session_state.api_url = "https://bank-marketing-mlops.onrender.com"
 
 with st.sidebar:
     st.markdown("**Configuración**")
@@ -154,60 +154,64 @@ with st.form("predict_form"):
     c1, c2 = st.columns(2)
     with c1:
         age = st.number_input(
-            "Age", min_value=18, max_value=100, value=None,
-            step=1, placeholder="e.g. 40",
+            "Edad", min_value=18, max_value=100, value=None,
+            step=1, placeholder="ej. 40",
         )
         job = st.text_input(
-            "Job", value="", placeholder="e.g. admin., technician, blue-collar",
+            "Trabajo", value="", placeholder="ej. admin., technician, blue-collar",
         )
         marital = st.text_input(
-            "Marital status", value="", placeholder="e.g. married, single, divorced",
+            "Estado civil", value="", placeholder="ej. married, single, divorced, unknown",
         )
     with c2:
         education = st.text_input(
-            "Education", value="", placeholder="e.g. primary, secondary, tertiary",
+            "Educación", value="", placeholder="ej. basic.6y, high.school, university.degree, unknown",
         )
-        default = st.selectbox(
-            "Default (crédito en mora)", options=["no", "yes"], index=None,
-            placeholder="Select",
-        )
-        balance = st.number_input(
-            "Balance", value=None, step=1, placeholder="e.g. 1500",
-        )
+        
 
     st.markdown('<div class="section-label">Situación financiera</div>', unsafe_allow_html=True)
-    c3, c4 = st.columns(2)
-    with c3:
-        housing = st.selectbox(
-            "Housing loan", options=["no", "yes"], index=None, placeholder="Select",
+    c2, c3 = st.columns(2)
+    with c2:
+        balance = st.number_input(
+            "Balance", value=None, step=1, placeholder="ej. 1500",
         )
+    with c3:
+        default = st.selectbox(
+            "¿Tiene incumplimiento de pago?", options=["no", "yes"], index=None,
+            placeholder="Seleccionar",
+        )
+    c4, c5 = st.columns(2)
     with c4:
+        housing = st.selectbox(
+            "¿Tiene préstamo hipotecario?", options=["no", "yes"], index=None, placeholder="Seleccionar",
+        )
+    with c5:
         loan = st.selectbox(
-            "Personal loan", options=["no", "yes"], index=None, placeholder="Select",
+            "¿Tiene préstamo personal?", options=["no", "yes"], index=None, placeholder="Seleccionar",
         )
 
-    st.markdown('<div class="section-label">Campaña de contacto</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Campañas de marketing</div>', unsafe_allow_html=True)
     c5, c6 = st.columns(2)
     with c5:
         contact = st.text_input(
-            "Contact type", value="", placeholder="e.g. cellular, telephone",
+            "Contactado mediante", value="", placeholder="ej. cellular, telephone",
         )
-        day = st.selectbox("Day", options=DAYS, index=None, placeholder="Select day")
-        month = st.selectbox("Month", options=MONTHS, index=None, placeholder="Select month")
+        day = st.selectbox("Día del último contacto", options=DAYS, index=None, placeholder="Seleccione un día")
+        month = st.selectbox("Mes del último contacto", options=MONTHS, index=None, placeholder="Seleccione un mes")
     with c6:
         campaign = st.number_input(
-            "Campaign contacts", min_value=0, value=None, step=1, placeholder="e.g. 1",
+            "Contactos realizados en esta campaña", min_value=0, value=None, step=1, placeholder="ej. 1",
         )
         pdays = st.number_input(
-            "Days since last contact (pdays)", min_value=-1, value=None, step=1,
-            placeholder="-1 if never contacted",
+            "Días desde contacto de una campaña anterior", min_value=-1, value=None, step=1,
+            placeholder="-1 si nunca fue contactado",
         )
         previous = st.number_input(
-            "Previous contacts", min_value=0, value=None, step=1, placeholder="e.g. 0",
+            "Contactos anteriores a esta campaña", min_value=0, value=None, step=1, placeholder="ej. 0",
         )
 
     poutcome = st.text_input(
-        "Previous outcome", value="", placeholder="e.g. unknown, failure, success",
+        "Resultado de la campaña de marketing anterior", value="", placeholder="ej. failure, success, nonexistent",
     )
 
     submitted = st.form_submit_button("Predecir")
@@ -292,4 +296,5 @@ if submitted:
         st.metric(label="probability", value=f"{proba:.2%}")
     else:
         st.caption("La API no devolvió probabilidad para esta respuesta.")
-    
+
+        
