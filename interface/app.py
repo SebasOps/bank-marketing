@@ -101,6 +101,15 @@ st.markdown(
     .result-no  { background-color: #fef2f2; border-color: #fecaca; }
     .result-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--text-main) !important; }
     .result-meta { color: var(--text-muted) !important; font-size: 0.82rem; }
+
+    div[data-testid="stMarkdownContainer"] h1 {
+        color: var(--text-main) !important;
+    }
+
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricLabel"] {
+        color: var(--text-main) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -297,4 +306,3 @@ if submitted:
     else:
         st.caption("La API no devolvió probabilidad para esta respuesta.")
 
-        
