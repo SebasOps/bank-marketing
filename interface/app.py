@@ -139,10 +139,10 @@ with st.sidebar:
 # Encabezado
 # ---------------------------------------------------------------
 
-st.markdown("<h1>Bank Marketing · Predicción de suscripción</h1>", unsafe_allow_html=True)
+st.markdown("<h1>Bank Marketing · Predicción de conversión</h1>", unsafe_allow_html=True)
 st.markdown(
-    '<p class="subtitle">Completa los datos del cliente para estimar si suscribirá '
-    'un depósito a plazo.</p>',
+    '<p class="subtitle">Completa los datos del cliente para estimar su probabilidad '
+    'de conversión a un depósito a plazo.</p>',
     unsafe_allow_html=True,
 )
 
