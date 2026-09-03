@@ -24,6 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT)) 
 
 from src.quality.clean import lower_case
+from src.monitoring.system_metrics import compute_system_metrics
 
 
 # Ruta del modelo
@@ -117,6 +118,11 @@ class PredictionResponse(BaseModel):
 # ---------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------
+
+@app.get("/metrics")
+def metrics():
+    return compute_system_metrics(LOG_DIR)
+
 
 @app.get("/health")
 def health():
