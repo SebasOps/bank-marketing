@@ -460,6 +460,7 @@ El tipo de `PredictionResponse.probability` permite `None`, pero el código actu
 
 ## Monitoring
 
+* python src/monitoring/health_check.py https://bank-marketing-mlops.streamlit.app/ 20 15
 
 
 ---
