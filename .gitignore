@@ -29,21 +29,9 @@ logs/
 .vscode/
 .idea/
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> feature/api
 # Artifacts
 mlartifacts/
 *.pkl
 
 # Database
-<<<<<<< HEAD
 *.db
-=======
-mlartifacts/
-*.pkl
->>>>>>> feature/model
-=======
-*.db
->>>>>>> feature/api
