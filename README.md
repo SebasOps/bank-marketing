@@ -116,9 +116,80 @@ Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y
 
 ## Training
 
+### Mediciones a evaluar: 
+* PR-AUC: será el criterio principal para la selección entre modelos/configuraciones. Esta métrica indica que tan bien el modelo distinge "yes" en general, además es ideal para evitar un número "bonito" que pueden dar otras métricas como accuracy por el desbalanceo de las clases.
+* Recall: segunda prioridad. En una campaña de marketing, no detectar a alguien que sí se iba a suscribir (falso negativo) suele costar más que llamar de más a alguien que no se suscribe (falso positivo), y esto es lo que nos refleja la métrica, de los "yes" reales, cual porcentaje detectó el modelo.
+* F1: se utilizará para revisar que un posible recall alto no se deba por una precisión baja, por ende, un F1 bajo y un recall alto signifiaría que el recall se debe a que el modelo simplemente predice "yes" para todo.
+* Accuracy: se identificó que no es la métrica ideal por el desbalanceo de las clases, pero igualmente se reportará. 
+
+
+### Hiperparámetros utilizados en los experimentos
+
+Las siguientes constantes se declararon en src/tracking/config.py para importarlas a src/training.py y src/evaluation/threshold_analysis.py evitando duplicidad
+
+RANDOM_SEED = 42
+CLASS_BALANCED = "balanced"
+
+INCLUIR_SMOTE_KNN = True
+NO_INCLUIR_SMOTE_KNN = False
+
+INCLUIR_ESCALADO = True
+NO_INCLUIR_ESCALADO = False
+
+Todos los modelos utilizan RANDOM_SEED para conservar los mismos resultados sin importar quien ejecute los experimentos asegurando reproducibilidad.
+
+
+### Modelos/configuraciones probados
+
+#### Random Forest
+* Experimento 1: max_depth=5, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
+* Experimento 2: max_depth=10, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO 
+
+Se observa que el experimento 2 presentó resultados mejores en las métricas:
+
+* Experimento 1: 
+* Experimento 2:
+
+#### Decision Tree
+
+* Experimento 3: max_depth=10, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
+* Experimento 4: max_depth=15, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
+
+Se observó que el experimento 3 presentó mejores resultados en las métricas entre los experimentos de Decision Tree: 
+
+* Experimento 3: 
+* Experimento 4:
+
+#### KNN
+
+* Experimento 5: 
+* Experimento 6:
+* Experimento 7:
+
+#### Logistic Regression
+
+* Experimento 8: 
+* Experimento 9:
+
+* RF 10 depth mejor que 5 
+* DT 10 depth mejor que 15
+* KNN
+* RL
+
+Ganó el RF de 10 depth
+Queda ir modificando el random forest- 15? - n_estimators
+
 ---
 
 ## MLflow
+
+Se registra como candidate el modelo que resultó ganador en la comparación entre RF/DT/KNN/RL según PR-AUC, recall y F1 (ver experiment tracking)
+
+Pasa a validation porque su desempeño en rf-final-holdout es PR-AUC=X, recall=Y, f1=Z, consistente con lo observado en los resultados con test_thr
+* run_id de rf-final-holdout: d6de4f7b11424ee3990329dfd95a465e 
+* Umbral: 0.45
+
+Se promueve a production tras validar que no hay regresión respecto a la comparación inicial entre los 4 modelos y que el equipo aprueba el resultado del holdout final
 
 ---
 
@@ -156,8 +227,9 @@ Donde cada uno de los integrantes aportó todas y cada una de las diferentes sec
 * python src/data-quality/clean.py
 * python src/data-quality/gates.py
 * python src/tests/test_clean_gates.py
+* python src/training.py
+* python src/evalution/threshold_analysis.py
 
 ---
----
-# Notas:
-DESCARTAR 'duration' DEL MODELO
+
+
