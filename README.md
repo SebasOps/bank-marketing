@@ -460,7 +460,84 @@ El tipo de `PredictionResponse.probability` permite `None`, pero el código actu
 
 ## Monitoring
 
-* python src/monitoring/health_check.py https://bank-marketing-mlops.streamlit.app/ 20 15
+### System Monitoring
+Correr docker
+* python src/monitoring/monitor_api.py http://localhost:8000 20 15
+* python src/monitoring/system_metrics.py
+
+{
+  "latency": {
+    "mean_ms": 767.3,
+    "p95_ms": 1096.15,
+    "p99_ms": 9936.78
+  },
+  "throughput_requests_per_min": 2.58,
+  "error_rate_pct": 2.5,
+  "availability_pct": 97.5,
+  "n_predict_calls": 40,
+  "n_health_pings": 40
+}
+
+### Data Monitoring & Drift
+
+Por desviacion estandar a los datos de balance y en job se fuerta "retired"
+
+* python src/monitoring/data_drift.py
+
+=== BATCH_1 (sin drift) ===
+  age: PSI=0.0058 -> OK
+  balance: PSI=0.0062 -> OK
+  day: PSI=0.0084 -> OK
+  campaign: PSI=0.0022 -> OK
+  pdays: PSI=0.0005 -> OK
+  previous: PSI=0.0009 -> OK
+  job: PSI=0.007 -> OK
+  marital: PSI=0.0008 -> OK
+  education: PSI=0.0008 -> OK
+  default: PSI=0.0001 -> OK
+  housing: PSI=0.0001 -> OK
+  loan: PSI=0.0007 -> OK
+  contact: PSI=0.0002 -> OK
+  month: PSI=0.0063 -> OK
+  poutcome: PSI=0.001 -> OK
+
+=== BATCH_2 (drift moderado) ===
+  age: PSI=0.0068 -> OK
+  balance: PSI=6.0278 -> ALERT
+  day: PSI=0.0081 -> OK
+  campaign: PSI=0.002 -> OK
+  pdays: PSI=0.0002 -> OK
+  previous: PSI=0.0006 -> OK
+  job: PSI=0.4541 -> ALERT
+  marital: PSI=0.0006 -> OK
+  education: PSI=0.0014 -> OK
+  default: PSI=0.0 -> OK
+  housing: PSI=0.0001 -> OK
+  loan: PSI=0.0003 -> OK
+  contact: PSI=0.0007 -> OK
+  month: PSI=0.0105 -> OK
+  poutcome: PSI=0.0005 -> OK
+
+=== BATCH_3 (drift fuerte) ===
+  age: PSI=0.006 -> OK
+  balance: PSI=8.0169 -> ALERT
+  day: PSI=0.0049 -> OK
+  campaign: PSI=0.0002 -> OK
+  pdays: PSI=0.0002 -> OK
+  previous: PSI=0.001 -> OK
+  job: PSI=1.4291 -> ALERT
+  marital: PSI=0.0009 -> OK
+  education: PSI=0.0032 -> OK
+  default: PSI=0.0002 -> OK
+  housing: PSI=0.0 -> OK
+  loan: PSI=0.0012 -> OK
+  contact: PSI=0.0019 -> OK
+  month: PSI=0.0062 -> OK
+  poutcome: PSI=0.001 -> OK
+
+### Model Monitoring
+
+* python src/monitoring/model_monitor.py
 
 
 ---
