@@ -31,7 +31,6 @@ logs/
 
 # Artifacts
 mlartifacts/
-*.pkl
 
 # Database
 *.db
