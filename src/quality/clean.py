@@ -66,10 +66,16 @@ def lower_case(df):
 def resolve_types(df):
     """
     Convierte a numérico las columnas que deberían serlo, en caso de que hayan llegado como texto.
+    Procesa solo las columnas de COLUMNAS_NUMERICAS presentes en el df, con el
+    mismo criterio que lower_case(): permite reutilizar la función tanto sobre
+    el dataset completo (training, con 'duration') como sobre un batch de
+    producción/inferencia (sin 'duration', excluida por leakage).
     """
     df = df.copy()
 
-    for col in COLUMNAS_NUMERICAS:
+    cols_presentes = [col for col in COLUMNAS_NUMERICAS if col in df.columns]
+
+    for col in cols_presentes:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     return df
