@@ -148,13 +148,27 @@ Para ejecutar este proyecto de MLOps se debe contar con los programas que serán
 ### Clonar repositorio
 Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Github:
 1. Abrir una nueva terminal en Visual Studio Code (o el editor de código de preferencia).
-2. Escribir y correr el siguiente comando: `git clone https://github.com/SebasOps/bank-marketing`
+2. Escribir y correr el siguiente comando:
+```python
+git clone https://github.com/SebasOps/bank-marketing
+```
 
 
 ### Entorno virtual
-1. Crear el entorno virtual ejecutando el siguiente comando: ```python -m venv mlflow-project```
-2. Activar el entorno virtual: ```mlflow-project/Scripts/activate```
-3. Instalar dependencias ejecutando el siguiente comando: ```pip install -r requirements.txt```
+1. Crear el entorno virtual ejecutando el siguiente comando:
+    ```bash
+    python -m venv mlflow-project
+    ```
+
+2. Activar el entorno virtual:
+    ```python
+    mlflow-project/Scripts/activate
+    ```
+
+3. Instalar dependencias ejecutando el siguiente comando:
+    ```python
+    pip install -r requirements.txt
+    ```
 
 
 
@@ -164,7 +178,10 @@ Seguir los siguientes pasos para obtener el proyecto desde el repositorio de Git
 
 ## Data Ingestion
 
-El dataset se obtiene mediante la ejecución del siguiente comando: ```python src/ingestion/ingest.py```
+El dataset se obtiene mediante la ejecución del siguiente comando: 
+```python
+src/ingestion/ingest.py
+```
 
 Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y los guarda en `data/raw/bank_marketing.csv`. No se requiere ningún archivo local previo ni conexión a bases de datos externas más allá de UCI; el script es completamente reproducible.
 
@@ -187,7 +204,6 @@ Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y
 
 
 ### Hiperparámetros utilizados en los experimentos
-
 Las siguientes constantes se declararon en ```src/tracking/config.py``` para importarlas a ```src/training.py``` y ```src/evaluation/threshold_analysis.py``` evitando duplicidad:
 
 ```python
@@ -211,12 +227,10 @@ Todos los experimentos utilizan ```RANDOM_SEED``` para conservar los mismos resu
 * Experimento 2: max_depth=10, n_estimator=100, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 
 #### Decision Tree
-
 * Experimento 3: max_depth=10, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 * Experimento 4: max_depth=15, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
 
 #### KNN
-
 * Experimento 5: n_neighbors=15, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
 * Experimento 6: n_neighbors=31, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
 
@@ -225,7 +239,6 @@ Se observó que entre el experimento 5 y el 6, este segundo presentó mejores re
 * Experimento 7: n_neighbors=31, incluir_escalado=INCLUIR_ESCALADO, incluir_smote=NO_INCLUIR_SMOTE_KNN, random_seed=RANDOM_SEED
 
 #### Logistic Regression
-
 * Experimento 8: C=0.4, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
 * Experimento 9: C=0.6, class_weight=CLASS_BALANCED, max_iter=1000, incluir_escalado=INCLUIR_ESCALADO
 
@@ -240,9 +253,13 @@ De los primeros 9 experimentos, inicialmente se hizo una comparación entre los 
 
 Aunque fue el mejor entre los experimentos realizados no significó que fuera excelente. Para ver si el modelo mejoraba, se realizaron más experimentos basados en este candidato.
 
+**Reproducir configuraciones inicial:**
+```python
+python src/training.py
+```
+
 
 ### Experimentos en base al candidato
-
 Primero, se varió el hiperparámetros n_estimator, corriendo dos nuevos ejercicios, uno con 200 y otro con 300. El valor de n_estimator es la cantidad de árboles distintos que el modelo de random forest realiza para obtener sus clasificaciones:
 
 * Experimento 10: max_depth=5, n_estimator=200, class_weight="balanced", incluir_escalado=NO_INCLUIR_ESCALADO
@@ -280,6 +297,16 @@ Viendo sus métricas se observa que, PR-AUC fue mayor con el umbral de 0.45 (acl
 
 La decisión fue tomada en base al objetivo: "identificar correctamente clientes con mayor probabilidad de conversión". Conocíamos claramente la solicitud de "maximizar accuracy", pero al identificar el gran desbalance de las clases se entendió que podría no ser la métrica que mejor refleje el comportamiento del modelo.
 
+**Reproducir configuraciones adicionales:**
+```python
+python src/evalution/threshold_analysis.py
+```
+
+**Exportar modelo ganador**
+```python
+python export_model.py
+```
+Requisito: Registrar el modelo ganador como "bank-marketing-model" y en su etapa/aliase "production"
 
 
 ---
@@ -291,16 +318,24 @@ La decisión fue tomada en base al objetivo: "identificar correctamente clientes
 ### Levantar UI
 Activar y acceder a la interfaz de MLflow:
 1. Con el venv activo, ejecutar el siguiente comando:
-````mlflow server --backend-store-uri sqlite:///bank.db --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000```
+    ```python
+    mlflow server --backend-store-uri sqlite:///bank.db --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000
+    ```
 2. En el navegador, acceder a: http://127.0.0.1:5000
 
 
 ### Correr experimentos
-Ejecutar el siguiente comando en la terminal: ```python src/training.py```
+Ejecutar el siguiente comando en la terminal:
+```python
+src/training.py
+```
 
 Esto corre los 13 experimentos de comparación inicial entre los cuatro modelos (Random Forest, Decision Tree, KNN y Logistic Regression, incluyendo la búsqueda de `min_samples_leaf` para Random Forest, ver a detalle en la sección *Training*). Los experimentos se podrán visualizar en el panel de MLflow. Sigue esta ruta: Experiments > classification-bank-marketing > Training runs.
 
-El análisis de umbral (Experimentos 15-17) se corre por separado. Corre el siguiente comando en la terminal: ```python src/evalution/threshold_analysis.py```
+El análisis de umbral (Experimentos 15-17) se corre por separado. Corre el siguiente comando en la terminal: 
+```python
+python src/evalution/threshold_analysis.py
+```
 
 
 ### Registrar el modelo ganador
@@ -353,12 +388,16 @@ imbalanced-learn==0.14.2
 ### Build reproducible
 
 1. Crear imagen <br>
-​```docker build -t bank-marketing-api .​```
+    ```python
+    docker build -t bank-marketing-api .
+    ```
 
-1. Crear contenedor de la imagen <br>
-​```docker run -p 8000:8000 bank-marketing-api​```
+2. Crear contenedor de la imagen <br>
+    ```python
+    docker run -p 8000:8000 bank-marketing-api
+    ```
 
-1. Verificación
+3. Verificación
     1. En el navegador, ingresar en el buscador lo siguiente: http://localhost:8000/health
     2. Debe observar:
         ```json
@@ -380,8 +419,14 @@ imbalanced-learn==0.14.2
 
 
 ### Levantar la API con Docker
-1. Obtener el id del contenedor con el siguiente comando: ​```docker ps -a​```
-2. Reemplaza '<container_id>' por el id del contenedor en el siguinte comando:  ```docker start <container_id>```
+1. Obtener el id del contenedor con el siguiente comando: ​
+    ```python
+    docker ps -
+    ```
+2. Reemplaza '<container_id>' por el id del contenedor en el siguinte comando: 
+    ```python
+    docker start <container_id>
+    ```
 3. Ejecutar el comando en la terminal
 4. Probar la API ingresando a http://localhost:8000/health
 
@@ -460,7 +505,89 @@ El tipo de `PredictionResponse.probability` permite `None`, pero el código actu
 
 ## Monitoring
 
-* python src/monitoring/health_check.py https://bank-marketing-mlops.streamlit.app/ 20 15
+Se diferencian tres dimensiones de monitoreo, cada una respondiendo una pregunta distinta sobre el sistema en producción: ¿está vivo y responde rápido? (System), ¿los datos que le llegan siguen pareciéndose a los de entrenamiento? (Data), ¿el modelo sigue siendo bueno prediciendo? (Model). Las tres se implementaron de forma independiente para poder diagnosticarlas por separado.
+
+
+### 1. System Monitoring
+**Enfoque: black-box monitoring.** En vez de loguear las requests desde dentro del contenedor, se optó por medir el servicio desde afuera (permitiendo hacer monitorio también si la API está en un servicio externo): un script (`src/monitoring/monitor_api.py`) le hace requests reales a `/health` y `/predict` en ciclos, y mide su respuesta como lo haría cualquier cliente externo.
+
+Métricas calculadas por `src/monitoring/system_metrics.py` a partir del log generado (`logs/api_monitor.jsonl`):
+- **Latency**: mean, p95, p99 (ms) sobre `/predict`
+- **Throughput**: requests/min
+- **Error Rate**: % de respuestas con status ≥400 o fallo de conexión
+- **Availability**: % de pings a `/health` respondidos con 200
+
+**Resultados obtenidos (20-40 ciclos por corrida):**
+
+| | API en Render (producción) | API local (Docker) |
+|-|---|---|
+| Latency mean | 61.77 ms | 528.11 ms |
+| Latency p95 | 107.39 ms | 835.38 ms |
+| Latency p99 | 111.13 ms | 7047.89 ms |
+| Throughput (req/min) | 11.54 | 0.66 |
+| Error Rate | 0% | 1.67% |
+| Availability | 100% | 98.33% |
+
+**Interpretación:** contra la intuición, la corrida local resultó considerablemente más lenta que Render. Se descarta cold-start como causa (no aplica en local). Las hipótesis más probables son overhead de red WSL2↔Windows en Docker Desktop y/o inicialización del backend paralelo de scikit-learn (`joblib`) en la primera predicción de la sesión, lo cual explicaría el outlier extremo de p99 (~10s) sin afectar de forma proporcional el mean. No se investigó a fondo por alcance del proyecto, pero se documenta como hallazgo válido de monitoreo: el sistema detectó una anomalía real de infraestructura, que es justamente su función.
+
+**Reproducir:**
+
+Con el contenedor corriendo:
+```bash
+python src/monitoring/monitor_api.py http://localhost:8000 20 15
+python src/monitoring/system_metrics.py
+```
+
+### 2. Data Monitoring
+**Técnica: PSI (Population Stability Index)**..
+
+- `P_reference(X)`: distribución de `X_train`
+- `P_production(X)`: distribución de 3 batches derivados de `X_test_final` (el holdout final, nunca visto durante entrenamiento ni selección de umbral)
+- Variables numéricas: PSI sobre bins por cuantiles de referencia
+- Variables categóricas: PSI sobre proporciones por categoría
+- **Thresholds** (estándar de industria, originado en scoring crediticio): PSI < 0.1 → OK, 0.1–0.25 → WARNING, > 0.25 → ALERT
+
+#### Simulación de producción y drift
+Los 3 batches de producción se generan a partir del mismo `X_test_final`: **BATCH_1** sin modificar (control), **BATCH_2** y **BATCH_3** con drift sintético inyectado (solo en memoria, nunca se modifica el dataset original) sobre dos variables (`balance`: shift de +2σ y +4σ respectivamente; `job`: 25%/50% de filas forzadas a `"retired"`), simulando por ejemplo un cambio real de comportamiento de clientes.
+
+**Resultados (features con drift inyectado):**
+
+| Feature | BATCH_1 | BATCH_2 | BATCH_3 |
+|---|---|---|---|
+| balance (PSI) | 0.0062 → OK | 6.03 → ALERT | 8.02 → ALERT |
+| job (PSI) | 0.007 → OK | 0.45 → ALERT | 1.43 → ALERT |
+| resto de features | OK | OK | OK |
+
+El sistema detectó correctamente el drift donde fue inyectado y no generó falsas alarmas en las variables no modificadas, confirmando que el mecanismo de detección funciona en ambas direcciones.
+
+**Reproducir:**
+```bash
+python src/monitoring/data_drift.py
+```
+
+
+### 3. Model Monitoring
+
+Se calculan Precision, Recall, F1, PR-AUC y ROC-AUC sobre los mismos 3 batches usados en *Simulación de drift*, cargando el modelo desde `model_artifact/` (mismo artefacto que sirve la API, sin dependencia de MLflow en runtime), implementado en `src/monitoring/model_monitor.py`. Los batches se generan con `StratifiedKFold` para que la proporción de clase positiva se mantenga constante entre batches (~11.7% en los 3), aislando el efecto del drift del efecto de una partición desbalanceada.
+
+**Resultados:**
+
+| | BATCH_1 (sin drift) | BATCH_2 (drift moderado) | BATCH_3 (drift fuerte) |
+|---|---|---|---|
+| PR-AUC | 0.4695 | 0.5232 | 0.3971 |
+| ROC-AUC | 0.7967 | 0.8297 | 0.7668 |
+| Precision | 0.2802 | 0.2308 | 0.2105 |
+| Recall | 0.6949 | 0.8182 | 0.7273 |
+| F1 | 0.3994 | 0.3600 | 0.3265 |
+| % predicho "yes" | 29.1% | 41.4% | 40.4% |
+
+**Interpretación:** BATCH_1 replica de forma consistente el PR-AUC=0.46 reportado en el holdout final (ver sección *Training*), validando que la simulación parte de la misma distribución base. Con drift moderado (BATCH_2), el modelo mantiene e incluso mejora ligeramente su capacidad de discriminación (PR-AUC sube), porque el shift en `balance`/`job` empuja las probabilidades en una dirección con la que el modelo ya sabía correlacionar mayor probabilidad de conversión, pero a costa de una caída marcada en precisión (dispara falsos positivos). Con drift fuerte (BATCH_3), el modelo ya se degrada en ambas dimensiones: cae PR-AUC y ROC-AUC por debajo del baseline, evidenciando que los datos se salieron tanto de la distribución de entrenamiento que el modelo pierde capacidad de discriminación, no solo de calibración. Esto demuestra un patrón de **degradación no lineal**: un drift moderado no necesariamente rompe el modelo; un drift severo sí.
+
+**Reproducir:**
+```bash
+python src/monitoring/model_monitor.py
+```
+
 
 
 ---
@@ -514,9 +641,10 @@ El resto de las secciones del proyecto (ingestión de datos, feature engineering
 * python export_model.py
 
 
-### Dockers
+### Docker
 * docker build -t bank-marketing-api .
 * docker run -p 8000:8000 bank-marketing-api
+* docker start <id_contenedor>
 
 
 ### Testing
