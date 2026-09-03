@@ -14,7 +14,7 @@ data/processed/*
 !data/raw/.gitkeep              
 !data/processed/.gitkeep
 
-# Modelos entrenados (si son pesados)
+# Modelos entrenados
 models/*.pkl
 models/*.joblib
 
@@ -30,13 +30,20 @@ logs/
 .idea/
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feature/api
 # Artifacts
 mlartifacts/
 *.pkl
 
 # Database
+<<<<<<< HEAD
 *.db
 =======
 mlartifacts/
 *.pkl
 >>>>>>> feature/model
+=======
+*.db
+>>>>>>> feature/api

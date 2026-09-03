@@ -53,10 +53,15 @@ def drop_duplicates(df):
 def lower_case(df):
     """
     Normaliza texto en columnas categóricas: minúsculas y sin espacios al inicio/final.
+    Procesa solo las columnas de COLUMNAS_CATEGORICAS que estén presentes en el df,
+    para poder reutilizarse tanto en el dataset completo (training) como en un
+    único registro de la API (donde 'y' no existe).
     """
     df = df.copy()
 
-    for col in COLUMNAS_CATEGORICAS:
+    cols_presentes = [col for col in COLUMNAS_CATEGORICAS if col in df.columns]
+
+    for col in cols_presentes:
         df[col] = df[col].str.lower()
         df[col] = df[col].str.strip()
 
