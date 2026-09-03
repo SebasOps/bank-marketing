@@ -15,7 +15,7 @@ import pandas as pd
 import mlflow.sklearn
 from pathlib import Path
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, average_precision_score
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -34,7 +34,8 @@ def compute_model_metrics(y_true, y_pred, y_proba):
         "precision": round(float(precision_score(y_true, y_pred, zero_division=0)), 4),
         "recall": round(float(recall_score(y_true, y_pred, zero_division=0)), 4),
         "f1": round(float(f1_score(y_true, y_pred, zero_division=0)), 4),
-        "auc": round(float(roc_auc_score(y_true, y_proba)), 4),
+        "pr_auc": round(float(average_precision_score(y_true, y_proba)), 4),
+        "roc_auc": round(float(roc_auc_score(y_true, y_proba)), 4),
         "n_samples": len(y_true),
         "positive_rate_true": round(float(np.mean(y_true)), 4),
         "positive_rate_pred": round(float(np.mean(y_pred)), 4),
@@ -58,9 +59,16 @@ if __name__ == "__main__":
     X_test_final = X_test_final.reset_index(drop=True)
     y_test_final = pd.Series(y_test_final).reset_index(drop=True)
 
-    # Mismos 3 splits que data_drift.py, para X y para y en paralelo
-    X_batches = np.array_split(X_test_final, 3)
-    y_batches = np.array_split(y_test_final, 3)
+    # Split estratificado en 3 batches: garantiza misma proporción de clase
+    # positiva en cada uno, así el único factor que varía entre batches es
+    # el drift inyectado, no la composición base de las clases.
+    from sklearn.model_selection import StratifiedKFold
+    
+    skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_SEED)
+    X_batches, y_batches = [], []
+    for _, batch_idx in skf.split(X_test_final, y_test_final):
+        X_batches.append(X_test_final.iloc[batch_idx].reset_index(drop=True))
+        y_batches.append(y_test_final.iloc[batch_idx].reset_index(drop=True))
 
     BATCH_1_X, BATCH_1_y = X_batches[0], y_batches[0]
     BATCH_2_X, BATCH_2_y = inject_drift(X_batches[1], intensity=0.5), y_batches[1]
