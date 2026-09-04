@@ -59,6 +59,9 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 ![Diagrama de arquitectura](public\arquitectura.jpeg)
 
+![Diagrama de arquitectura](https://github.com/SebasOps/bank-marketing/blob/717018d0d04658cf577cbe4b6e373c09af8a19bd/public/arquitectura.jpeg)
+
+
 El sistema se organiza en seis capas, cada una correspondiente a una carpeta o script concreto del repositorio:
 
 | Capa | Componente(s) | Ubicación en el repositorio |
