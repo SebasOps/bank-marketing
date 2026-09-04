@@ -76,13 +76,14 @@ def contaminate_schema_modification(df):
 # --------------------------------------------
 # Runner: aplica gates, captura resultado, registra incidente
 
-def run_gate_check(scenario_name, contaminated_df, reference_df, gate_fn, needs_type_coercion=False):
+def run_gate_check(scenario_name, contaminated_df, reference_df, gate_fn, needs_reference=True, needs_type_coercion=False):
     """
     Corre UN gate específico (no toda la cadena de production_quality_gates),
     para que cada escenario de contaminación pruebe exclusivamente el gate
     diseñado para detectarlo, sin que otro gate lo intercepte antes por
-    coincidencia (ej. un outlier natural del batch disparando
-    check_no_extreme_outliers antes de que check_valid_categories corra).
+    coincidencia. needs_reference indica explícitamente si el gate requiere
+    reference_df como segundo argumento (evita adivinar la firma por
+    introspección, que es frágil ante parámetros con default).
     """
     df_to_check = resolve_types(contaminated_df) if needs_type_coercion else contaminated_df
 
@@ -93,7 +94,10 @@ def run_gate_check(scenario_name, contaminated_df, reference_df, gate_fn, needs_
     }
 
     try:
-        gate_fn(df_to_check, reference_df) if gate_fn.__code__.co_argcount == 2 else gate_fn(df_to_check)
+        if needs_reference:
+            gate_fn(df_to_check, reference_df)
+        else:
+            gate_fn(df_to_check)
         entry["detected"] = False
         entry["blocked"] = False
         entry["message"] = "El gate correspondiente no detectó el defecto"
@@ -138,19 +142,20 @@ if __name__ == "__main__":
         expected_feature_columns,
     )
 
+    # (nombre, df_contaminado, gate_fn, necesita_reference_df, necesita_coercion_tipos)
     escenarios = [
-        ("missing_values", contaminate_missing_values(BATCH_LIMPIO), check_no_missing_values, False),
-        ("duplicated_rows", contaminate_duplicates(BATCH_LIMPIO), check_no_duplicates, False),
-        ("extreme_outlier", contaminate_extreme_outlier(BATCH_LIMPIO), check_no_extreme_outliers, False),
-        ("incorrect_datatype", contaminate_incorrect_datatype(BATCH_LIMPIO), check_no_missing_values, True),
-        ("unknown_category", contaminate_unknown_category(BATCH_LIMPIO), check_valid_categories, False),
-        ("schema_modification", contaminate_schema_modification(BATCH_LIMPIO), expected_feature_columns, False),
+        ("missing_values", contaminate_missing_values(BATCH_LIMPIO), check_no_missing_values, False, False),
+        ("duplicated_rows", contaminate_duplicates(BATCH_LIMPIO), check_no_duplicates, False, False),
+        ("extreme_outlier", contaminate_extreme_outlier(BATCH_LIMPIO), check_no_extreme_outliers, True, False),
+        ("incorrect_datatype", contaminate_incorrect_datatype(BATCH_LIMPIO), check_no_missing_values, False, True),
+        ("unknown_category", contaminate_unknown_category(BATCH_LIMPIO), check_valid_categories, True, False),
+        ("schema_modification", contaminate_schema_modification(BATCH_LIMPIO), expected_feature_columns, True, False),
     ]
 
     print("=== Simulación de contaminación de calidad (Q) ===\n")
     resultados = []
-    for nombre, df_contaminado, gate_fn, necesita_coercion in escenarios:
-        resultado = run_gate_check(nombre, df_contaminado, REFERENCE, gate_fn, necesita_coercion)
+    for nombre, df_contaminado, gate_fn, necesita_ref, necesita_coercion in escenarios:
+        resultado = run_gate_check(nombre, df_contaminado, REFERENCE, gate_fn, necesita_ref, necesita_coercion)
         resultados.append(resultado)
 
     n_detectados = sum(r["detected"] for r in resultados)
