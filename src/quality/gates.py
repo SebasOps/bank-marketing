@@ -152,33 +152,30 @@ def check_no_duplicates(df):
     )
 
 
-def check_no_extreme_outliers(df, reference_df, iqr_multiplier=3):
+def check_no_extreme_outliers(df, reference_df, lower_pct=0.001, upper_pct=0.999):
     """
     Verifica outliers extremos en columnas numéricas, con límites calculados
-    dinámicamente sobre reference_df (rango intercuartílico x3, más laxo que
-    el estándar 1.5 para capturar solo valores verdaderamente extremos, no
-    cualquier variación normal de muestreo).
+    dinámicamente sobre los percentiles 0.1 y 99.9 de reference_df.
 
-    Columnas con IQR=0 en la referencia (ej. 'pdays', 'previous', dominadas
-    por un único valor) se excluyen: un rango de ancho cero no es una medida
-    útil de "extremo", marcaría como outlier cualquier valor distinto al
-    modo, generando falsos positivos.
+    Se prefiere percentiles extremos sobre IQR: variables de cola larga en
+    este dataset (ej. 'campaign', con clientes contactados hasta 60+ veces
+    de forma legítima) generan límites IQR falsamente estrechos, marcando
+    como 'outlier' variación real del negocio. Los percentiles 0.1/99.9
+    solo excluyen el 0.2% más extremo de la referencia, capturando
+    contaminación real (ej. balance=-500000) sin falsos positivos sobre
+    la variación natural de variables sesgadas.
     """
     numeric_cols = reference_df.select_dtypes(include="number").columns
     errores = {}
-
     for col in numeric_cols:
         if col not in df.columns:
             continue
-        q1, q3 = reference_df[col].quantile([0.25, 0.75])
-        iqr = q3 - q1
-        if iqr == 0:
-            continue
-        lo, hi = q1 - iqr_multiplier * iqr, q3 + iqr_multiplier * iqr
+        lo, hi = reference_df[col].quantile([lower_pct, upper_pct])
+        if lo == hi:
+            continue  # variable degenerada en la referencia, no aplica
         n_fuera = ((df[col] < lo) | (df[col] > hi)).sum()
         if n_fuera > 0:
             errores[col] = f"{n_fuera} valores fuera de [{lo:.1f}, {hi:.1f}]"
-
     assert len(errores) == 0, (
         f"Se detectaron outliers extremos: {errores}"
     )
