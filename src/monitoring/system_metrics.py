@@ -1,13 +1,16 @@
+# Imports 
 import json
 import numpy as np
 from pathlib import Path
 from datetime import datetime
+
 
 def load_jsonl(path: Path):
     if not path.exists():
         return []
     with open(path) as f:
         return [json.loads(line) for line in f if line.strip()]
+
 
 def compute_system_metrics(log_path: Path):
     entries = load_jsonl(log_path)
@@ -38,6 +41,7 @@ def compute_system_metrics(log_path: Path):
         )
 
     return result
+
 
 if __name__ == "__main__":
     LOG_PATH = Path(__file__).resolve().parent.parent.parent / "logs" / "api_monitor.jsonl"

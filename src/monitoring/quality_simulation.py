@@ -152,7 +152,7 @@ if __name__ == "__main__":
         ("schema_modification", contaminate_schema_modification(BATCH_LIMPIO), expected_feature_columns, True, False),
     ]
 
-    print("=== Simulación de contaminación de calidad (Q) ===\n")
+    print("=== Simulación de contaminación de calidad ===\n")
     resultados = []
     for nombre, df_contaminado, gate_fn, necesita_ref, necesita_coercion in escenarios:
         resultado = run_gate_check(nombre, df_contaminado, REFERENCE, gate_fn, necesita_ref, necesita_coercion)
