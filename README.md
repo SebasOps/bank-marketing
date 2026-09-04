@@ -1,10 +1,8 @@
 # Bank Marketing
 
----
 
 
-
-## Business Problem
+## Problema del Negocio
 
 ### Contexto
 Una institución financiera realiza campañas telefónicas para vender depósitos a plazo fijo.
@@ -57,7 +55,20 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 
 
-## Architecture
+## Arquitectura
+
+![Diagrama de arquitectura](public\arquitectura.jpeg)
+
+El sistema se organiza en seis capas, cada una correspondiente a una carpeta o script concreto del repositorio:
+
+| Capa | Componente(s) | Ubicación en el repositorio |
+|---|---|---|
+| 1. Data Pipeline | `ingest.py` → `clean.py` → `gates.py` → `build_features.py` → `split.py` | `src/ingestion/`, `src/quality/`, `src/features/`, `src/pipelines/` |
+| 2. Training & Tracking | `training.py`, `threshold_analysis.py`, MLflow Model Registry | `src/tracking/`, `src/evaluation/` |
+| 3. Export | `export_model.py` → `model_artifact/` | raíz del repositorio, `model_artifact/` |
+| 4. Serving | Docker + FastAPI (`app/main.py`) desplegado en Render | `Dockerfile`, `app/` |
+| 5. Cliente | Streamlit (`interface/app.py`) | `interface/` |
+| 6. Monitoring | `monitor_api.py`, `data_drift.py`, `model_monitor.py`, `quality_simulation.py`, `retraining_trigger.py`  | `src/monitoring/` |
 
 
 
@@ -65,7 +76,7 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 
 
-## Repository Structure
+## Estructura del Repositorio
 
 ### Estructura
 El repositorio en Github de este proyecto tiene la siguiente estructura:
@@ -87,6 +98,8 @@ bank-marketing/
 │   ├── data-eda.ipynb
 │   ├── data-quality.ipynb
 │   └── feature-engineering.ipynb
+├── public/
+│   └── arquitectura.jpeg
 ├── src/
 │   ├── evaluation/
 │   │   └── threshold_analysis.py
@@ -99,6 +112,7 @@ bank-marketing/
 │   │   ├── model_monitor.py
 │   │   ├── monitor_api.py
 │   │   ├── quality_simulation.py
+│   │   ├── retraining_trigger.py
 │   │   └── system_metrics.py
 │   ├── pipelines/
 │   │   └── split.py
@@ -140,7 +154,7 @@ Para el desarrollo se usaron las siguientes ramas:
 
 
 
-## Installation
+## Instalación
 
 ### Programas necesarios
 Para ejecutar este proyecto de MLOps se debe contar con los programas que serán mencionados. La documentación de este proyecto parte de que ya están instalados y configurados y que se realiza en Windows, pero igualmente se adjuntan los links de instalación, más no serán explicados:
@@ -181,7 +195,7 @@ git clone https://github.com/SebasOps/bank-marketing
 
 
 
-## Data Ingestion
+## Ingesta de Datos
 
 El dataset se obtiene mediante la ejecución del siguiente comando: 
 ```python
@@ -199,7 +213,7 @@ Esto descarga los datos directamente desde UCI usando la librería `ucimlrepo` y
 
 
 
-## Training
+## Entrenamiento
 
 ### Mediciones a evaluar:
 * **PR-AUC**: será el criterio principal para la selección entre modelos/configuraciones. Esta métrica indica que tan bien el modelo distinge "yes" en general, además es ideal para evitar un número "bonito" que pueden dar otras métricas como accuracy por el desbalanceo de las clases.
@@ -391,7 +405,6 @@ imbalanced-learn==0.14.2
 
 
 ### Build reproducible
-
 1. Crear imagen <br>
     ```python
     docker build -t bank-marketing-api .
@@ -508,12 +521,12 @@ El tipo de `PredictionResponse.probability` permite `None`, pero el código actu
 
 
 
-## Monitoring
+## Monitoreo
 
 Se diferencian tres dimensiones de monitoreo, cada una respondiendo una pregunta distinta sobre el sistema en producción: ¿está vivo y responde rápido? (System), ¿los datos que le llegan siguen pareciéndose a los de entrenamiento? (Data), ¿el modelo sigue siendo bueno prediciendo? (Model). Las tres se implementaron de forma independiente para poder diagnosticarlas por separado.
 
 
-### 1. System Monitoring
+### 1. Monitoreo del sistema
 **Enfoque: black-box monitoring.** En vez de loguear las requests desde dentro del contenedor, se optó por medir el servicio desde afuera (permitiendo hacer monitorio también si la API está en un servicio externo): un script (`src/monitoring/monitor_api.py`) le hace requests reales a `/health` y `/predict` en ciclos, y mide su respuesta como lo haría cualquier cliente externo.
 
 Métricas calculadas por `src/monitoring/system_metrics.py` a partir del log generado (`logs/api_monitor.jsonl`):
@@ -526,38 +539,25 @@ Métricas calculadas por `src/monitoring/system_metrics.py` a partir del log gen
 
 | | API en Render (producción) | API local (Docker) |
 |-|---|---|
-| Latency mean | 61.77 ms | 528.11 ms |
-| Latency p95 | 107.39 ms | 835.38 ms |
-| Latency p99 | 111.13 ms | 7047.89 ms |
-| Throughput (req/min) | 11.54 | 0.66 |
-| Error Rate | 0% | 1.67% |
-| Availability | 100% | 98.33% |
+| Latency mean | 785.82 ms | 421.09 ms |
+| Latency p95 | 1050.68 ms | 1024.17 ms |
+| Latency p99 | 1191.7 ms | 1154.59 ms |
+| Throughput (req/min) | 3.82 | 1.21 |
+| Error Rate | 0% | 0% |
+| Availability | 100% | 100% |
+| n (predict/health) | 20 / 20 | 40 / 40 |
 
-{
-  "latency": {
-    "mean_ms": ,
-    "p95_ms": 1123.6,
-    "p99_ms": 4223.61
-  },
-  "throughput_requests_per_min": 0.32,
-  "error_rate_pct": 1.25,
-  "availability_pct": 98.75,
-  "n_predict_calls": 80,
-  "n_health_pings": 80
-}
-
-
-**Interpretación:** contra la intuición, la corrida local resultó considerablemente más lenta que Render. Se descarta cold-start como causa (no aplica en local). No se investigó a fondo por alcance del proyecto, pero se documenta como hallazgo válido de monitoreo: el sistema detectó una anomalía real de infraestructura, que es justamente su función.
+Interpretación: ambos ambientes muestran latencias del mismo orden de magnitud (mean entre 400-800ms, p95/p99 alrededor de 1-1.2s), sin diferencias sustanciales entre Render y local. Render tiene mayor throughput (3.82 vs 1.21 req/min), consistente con no estar limitado por recursos locales de desarrollo. En ambos casos, error rate es 0% y availability 100%. Además, el sistema no reportó fallas ni indisponibilidad durante la ventana de medición. La cercanía entre p95 y p99 en ambos ambientes (sin outliers extremos) indica un comportamiento de latencia consistente, sin picos aislados que distorsionen el promedio.
 
 **Reproducir:**
 
 Con el contenedor corriendo:
 ```bash
 python src/monitoring/monitor_api.py http://localhost:8000 20 15
-python src/monitoring/system_metrics.py
+python src/monitoring/system_metrics.py http://localhost:8000 
 ```
 
-### 2. Data Monitoring
+### 2. Monitoreo de datos
 **Técnica: PSI (Population Stability Index)**..
 
 - `P_reference(X)`: distribución de `X_train`
@@ -585,8 +585,7 @@ python src/monitoring/data_drift.py
 ```
 
 
-### 3. Model Monitoring
-
+### 3. Monitoreo del modelo
 Se calculan Precision, Recall, F1, PR-AUC y ROC-AUC sobre los mismos 3 batches usados en *Simulación de drift*, cargando el modelo desde `model_artifact/` (mismo artefacto que sirve la API, sin dependencia de MLflow en runtime), implementado en `src/monitoring/model_monitor.py`. Los batches se generan con `StratifiedKFold` para que la proporción de clase positiva se mantenga constante entre batches (~11.7% en los 3), aislando el efecto del drift del efecto de una partición desbalanceada.
 
 **Resultados:**
@@ -608,7 +607,6 @@ python src/monitoring/model_monitor.py
 ```
 
 ### Simulación de contaminación de calidad
-
 Se implementó `src/monitoring/quality_simulation.py`, que contamina copias en memoria de un batch de producción (nunca el dataset original) con los 6 defectos requeridos, y verifica que `production_quality_gates()` (`src/quality/gates.py`) los detecte, bloquee (`AssertionError`) y registre el incidente (`logs/quality_incidents.jsonl`).
 
 **Diseño de la prueba:** cada escenario ejercita exclusivamente el gate diseñado para detectar su defecto (no la cadena completa de gates), para evitar falsos positivos por interferencia entre validaciones. Antes de correr los escenarios, se valida que el batch limpio (sin contaminar) pase todos los gates sin alertas, condición necesaria para confiar en que lo detectado luego es la contaminación inyectada y no ruido preexistente del batch.
@@ -625,8 +623,30 @@ Se implementó `src/monitoring/quality_simulation.py`, que contamina copias en m
 **Nota sobre "incorrect datatype":** el valor inválido (`age="treinta"`) no dispara un gate de tipos directamente. `resolve_types()` (la misma función de `src/quality/clean.py` usada en el pipeline de entrenamiento) convierte el string inválido a `NaN` vía `pd.to_numeric(errors="coerce")` antes de que los gates corran, el defecto de tipo se neutraliza primero por la limpieza real del proyecto, y lo que efectivamente lo bloquea es el gate de valores nulos. Se documenta así en vez de ocultarlo, porque refleja el comportamiento real del pipeline.
 
 **Reproducir:**
-```bash
+```python
 python src/monitoring/quality_simulation.py
+```
+
+
+### Estrategia de reentrenamiento
+**Regla de decisión** (`src/monitoring/retraining_trigger.py`):
+```bash
+SI (algún feature con PSI > 0.25) Y (PR-AUC < 0.40)
+→ Trigger Retraining Pipeline
+```
+
+**Por qué se exigen ambas condiciones:** `Data Drift ≠ Model Degradation`. Un cambio de distribución no implica que el modelo prediga peor, puede desplazarse en una dirección que el modelo ya maneja bien (ver BATCH_2 abajo). Reentrenar solo por PSI alto arriesgaría producir un modelo innecesario o peor, sin mejora real. A la inversa, el modelo puede degradarse sin drift visible en features (concept drift, cambio en P(y|X)), caso que PSI no puede capturar y que requiere investigación manual, no auto-reentrenamiento.
+
+**Resultado sobre los 3 batches (mismos que *Monitoreo*):**
+| Batch | PSI en alerta | PR-AUC | Trigger |
+|---|---|---|---|
+| BATCH_1 | — | 0.4695 | No |
+| BATCH_2 (drift moderado) | `balance`, `job` | 0.5232 | **No** - drift sin degradación |
+| BATCH_3 (drift fuerte) | `balance`, `job` | 0.3971 | **Sí** - drift + degradación |
+
+**Reproducir:**
+```python
+python src/monitoring/retraining_trigger.py
 ```
 
 
@@ -635,7 +655,7 @@ python src/monitoring/quality_simulation.py
 
 
 
-## Results
+## Resultados
 
 ### Comparación final de modelos
 Tras ejecutar los 9 experimentos iniciales (ver sección *Training*), se comparó la mejor configuración obtenida de cada uno de los cuatro modelos evaluados:
@@ -668,7 +688,7 @@ El modelo ganador (Random Forest, `max_depth=10, n_estimators=100`) fue sometido
 
 En términos de negocio: de cada 100 clientes que efectivamente iban a contratar el depósito a plazo, el modelo final identifica correctamente a 72, a costa de un mayor número de contactos "desperdiciados" sobre clientes que no convierten (reflejado en la caída de F1 y accuracy). Esta es la decisión de negocio documentada en *Training*: priorizar no perder clientes con intención de conversión (falso negativo) por encima de minimizar contactos de más (falso positivo).
 
-Es importante notar que esta comparación no es sobre el mismo conjunto de test (el candidato base se evaluó sobre `X_test` completo, el modelo final sobre `X_test_final`), por lo que la mejora en PR-AUC no debe interpretarse como una ganancia "gratuita" del umbral — el umbral no afecta PR-AUC, que es invariante al punto de corte (ver *Training* para el detalle de esta aclaración).
+Es importante notar que esta comparación no es sobre el mismo conjunto de test (el candidato base se evaluó sobre `X_test` completo, el modelo final sobre `X_test_final`), por lo que la mejora en PR-AUC no debe interpretarse como una ganancia "gratuita" del umbra, el umbral no afecta PR-AUC, que es invariante al punto de corte (ver *Training* para el detalle de esta aclaración).
 
 
 ### Síntesis de monitoreo
@@ -690,7 +710,7 @@ El sistema desplegado fue evaluado en tres dimensiones independientes (ver secci
 
 
 
-## Team
+## Equipo
 El equipo se conforma por:
 
 * **Sebastián Aguilar Benavides**: modelos KNN y Logistic Regression.
