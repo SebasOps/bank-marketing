@@ -57,8 +57,6 @@ Los datos del dataset están relacionados con campañas de marketing directo de 
 
 ## Arquitectura
 
-![Diagrama de arquitectura](public\arquitectura.jpeg)
-
 ![Diagrama de arquitectura](https://github.com/SebasOps/bank-marketing/blob/717018d0d04658cf577cbe4b6e373c09af8a19bd/public/arquitectura.jpeg)
 
 
