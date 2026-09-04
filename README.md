@@ -76,7 +76,7 @@ bank-marketing/
 │   └── main.py
 ├── interface/
 │   └── app.py
-├── model_artifact/                ??? 
+├── model_artifact/
 │   ├── conda.yaml
 │   ├── metadata.json
 │   ├── MLmodel
@@ -94,16 +94,22 @@ bank-marketing/
 │   │   └── build_features.py
 │   ├── ingestion/
 │   │   └── ingest.py
+│   ├── monitoring  /
+│   │   ├── data_drift.py
+│   │   ├── model_monitor.py
+│   │   ├── monitor_api.py
+│   │   ├── quality_simulation.py
+│   │   └── system_metrics.py
 │   ├── pipelines/
 │   │   └── split.py
-│   ├── quality/
+│   ├── quiality/
 │   │   ├── clean.py
 │   │   └── gates.py
 │   ├── tracking/
 │   │   ├── config.py
 │   │   └── run_experiment.py
 │   └── training.py
-├── tests/
+├── test/
 │   ├── __init__.py
 │   ├── test_api.py
 │   ├── test_data.py
@@ -113,9 +119,8 @@ bank-marketing/
 ├── .gitignore
 ├── Dockerfile
 ├── export_model.py
-├── bank.db
 ├── requirements-api.txt
-├── requirements-dev.txt ?? 
+├── requirements-dev.txt
 ├── requirements.txt
 └── README.md
 ```
@@ -528,7 +533,21 @@ Métricas calculadas por `src/monitoring/system_metrics.py` a partir del log gen
 | Error Rate | 0% | 1.67% |
 | Availability | 100% | 98.33% |
 
-**Interpretación:** contra la intuición, la corrida local resultó considerablemente más lenta que Render. Se descarta cold-start como causa (no aplica en local). Las hipótesis más probables son overhead de red WSL2↔Windows en Docker Desktop y/o inicialización del backend paralelo de scikit-learn (`joblib`) en la primera predicción de la sesión, lo cual explicaría el outlier extremo de p99 (~10s) sin afectar de forma proporcional el mean. No se investigó a fondo por alcance del proyecto, pero se documenta como hallazgo válido de monitoreo: el sistema detectó una anomalía real de infraestructura, que es justamente su función.
+{
+  "latency": {
+    "mean_ms": ,
+    "p95_ms": 1123.6,
+    "p99_ms": 4223.61
+  },
+  "throughput_requests_per_min": 0.32,
+  "error_rate_pct": 1.25,
+  "availability_pct": 98.75,
+  "n_predict_calls": 80,
+  "n_health_pings": 80
+}
+
+
+**Interpretación:** contra la intuición, la corrida local resultó considerablemente más lenta que Render. Se descarta cold-start como causa (no aplica en local). No se investigó a fondo por alcance del proyecto, pero se documenta como hallazgo válido de monitoreo: el sistema detectó una anomalía real de infraestructura, que es justamente su función.
 
 **Reproducir:**
 
@@ -588,6 +607,28 @@ Se calculan Precision, Recall, F1, PR-AUC y ROC-AUC sobre los mismos 3 batches u
 python src/monitoring/model_monitor.py
 ```
 
+### Simulación de contaminación de calidad
+
+Se implementó `src/monitoring/quality_simulation.py`, que contamina copias en memoria de un batch de producción (nunca el dataset original) con los 6 defectos requeridos, y verifica que `production_quality_gates()` (`src/quality/gates.py`) los detecte, bloquee (`AssertionError`) y registre el incidente (`logs/quality_incidents.jsonl`).
+
+**Diseño de la prueba:** cada escenario ejercita exclusivamente el gate diseñado para detectar su defecto (no la cadena completa de gates), para evitar falsos positivos por interferencia entre validaciones. Antes de correr los escenarios, se valida que el batch limpio (sin contaminar) pase todos los gates sin alertas, condición necesaria para confiar en que lo detectado luego es la contaminación inyectada y no ruido preexistente del batch.
+
+| Defecto simulado | Gate que lo detecta | Resultado |
+|---|---|---|
+| Missing values | `check_no_missing_values` | Detectado: 20 nulos en `balance` |
+| Duplicated rows | `check_no_duplicates` | Detectado: 5 filas duplicadas |
+| Extreme outlier | `check_no_extreme_outliers` | Detectado: 3 valores en `balance` fuera de rango |
+| Incorrect datatype | `check_no_missing_values`* | Detectado: 3 nulos en `age` |
+| Unknown category | `check_valid_categories` | Detectado: `"UNKNOWN_NEW_CATEGORY"` en `job` |
+| Schema modification | `expected_feature_columns` | Detectado: columna extra + columna faltante |
+
+**Nota sobre "incorrect datatype":** el valor inválido (`age="treinta"`) no dispara un gate de tipos directamente. `resolve_types()` (la misma función de `src/quality/clean.py` usada en el pipeline de entrenamiento) convierte el string inválido a `NaN` vía `pd.to_numeric(errors="coerce")` antes de que los gates corran, el defecto de tipo se neutraliza primero por la limpieza real del proyecto, y lo que efectivamente lo bloquea es el gate de valores nulos. Se documenta así en vez de ocultarlo, porque refleja el comportamiento real del pipeline.
+
+**Reproducir:**
+```bash
+python src/monitoring/quality_simulation.py
+```
+
 
 
 ---
@@ -595,6 +636,53 @@ python src/monitoring/model_monitor.py
 
 
 ## Results
+
+### Comparación final de modelos
+Tras ejecutar los 9 experimentos iniciales (ver sección *Training*), se comparó la mejor configuración obtenida de cada uno de los cuatro modelos evaluados:
+
+| Modelo | Configuración | PR-AUC | Recall | F1 | Accuracy |
+|---|---|---|---|---|---|
+| **Random Forest** | `max_depth=10, n_estimators=100` | **0.43** | 0.62 | **0.43** | 0.81 |
+| Decision Tree | `max_depth=10` | 0.38 | 0.56 | 0.43 | **0.82** |
+| Logistic Regression | `C=0.4` / `C=0.6` (resultados idénticos) | 0.41 | 0.63 | 0.38 | 0.27 |
+| KNN | `n_neighbors=31, smote=True` | 0.34 | **0.67** | 0.33 | 0.68 |
+
+**Random Forest fue seleccionado como modelo ganador** por tener el mejor PR-AUC (0.43), la métrica principal definida en *Business Problem* dado el desbalanceo de clases (~88% "no" / 12% "yes").
+
+Aunque Decision Tree obtuvo mejor accuracy (0.82 vs 0.81), esto no fue determinante: como se explicó en *Business Problem*, accuracy de forma aislada no refleja bien el desempeño sobre la clase minoritaria en un dataset desbalanceado, y en la métrica priorizada (PR-AUC), Random Forest lo supera claramente (0.43 vs 0.38).
+
+KNN presentó el recall más alto de los cuatro modelos (0.67), pero su PR-AUC (0.34) y F1 (0.33) fueron los más bajos, indicando que ese recall no se tradujo en una discriminación real de la clase positiva.
+
+Logistic Regression es el caso más claro de esta desconexión entre métricas: con `class_weight="balanced"` sobre un dataset desbalanceado, el modelo alcanzó un recall competitivo (0.63) a costa de un accuracy de apenas 0.27, lo cual solo se explica si el modelo predice "yes" para la gran mayoría de los registros, sin importar el registro real. La matriz de confusión confirmó este comportamiento: el recall alto no reflejaba señal genuina aprendida por el modelo, sino un sesgo sistemático hacia la clase positiva.
+
+
+### Modelo ganador y desempeño final
+El modelo ganador (Random Forest, `max_depth=10, n_estimators=100`) fue sometido a un análisis de umbral (ver *Training*, Experimentos 15-17) para optimizar la detección de clientes con intención real de conversión. El umbral seleccionado (0.45) fue evaluado sobre `X_test_final`, el holdout final nunca antes visto durante el entrenamiento ni la selección del umbral (run `rf-final-holdout`):
+
+| Métrica | Candidato base | Modelo umbral 0.45 (final) |
+|---|---|---|
+| PR-AUC | 0.43 | 0.46 |
+| Recall | 0.62 | 0.72 |
+| F1 | 0.43 | 0.40 |
+| Accuracy | 0.81 | 0.75 |
+
+En términos de negocio: de cada 100 clientes que efectivamente iban a contratar el depósito a plazo, el modelo final identifica correctamente a 72, a costa de un mayor número de contactos "desperdiciados" sobre clientes que no convierten (reflejado en la caída de F1 y accuracy). Esta es la decisión de negocio documentada en *Training*: priorizar no perder clientes con intención de conversión (falso negativo) por encima de minimizar contactos de más (falso positivo).
+
+Es importante notar que esta comparación no es sobre el mismo conjunto de test (el candidato base se evaluó sobre `X_test` completo, el modelo final sobre `X_test_final`), por lo que la mejora en PR-AUC no debe interpretarse como una ganancia "gratuita" del umbral — el umbral no afecta PR-AUC, que es invariante al punto de corte (ver *Training* para el detalle de esta aclaración).
+
+
+### Síntesis de monitoreo
+El sistema desplegado fue evaluado en tres dimensiones independientes (ver sección *Monitoring* para el detalle completo):
+
+- **System (black-box):** la API responde con 100% de disponibilidad y 0% de error rate en producción (Render). Se detectó una anomalía de latencia en el entorno local (Docker) no observada en producción, documentada como hallazgo válido de monitoreo más que como defecto del sistema.
+- **Data (PSI):** el mecanismo de detección de drift funciona correctamente en ambas direcciones, identifica drift inyectado en `balance` y `job` sin generar falsas alarmas en el resto de las variables.
+- **Model:** el modelo es robusto ante drift moderado (mantiene o mejora ligeramente su PR-AUC), pero se degrada en ambas dimensiones (PR-AUC y ROC-AUC) ante drift fuerte, evidenciando un patrón de degradación no lineal: no todo drift es igual de dañino, pero un drift severo sí compromete la capacidad de discriminación del modelo.
+- **Quality gates:** los 6 defectos de calidad simulados (missing values, duplicados, outliers extremos, tipo de dato incorrecto, categoría desconocida, modificación de esquema) fueron detectados y bloqueados correctamente por `production_quality_gates()`.
+
+
+### Limitaciones y trabajo futuro
+- El trade-off de threshold (recall +0.10 a costa de F1 -0.03 y accuracy -0.06) fue una decisión de negocio explícita, no una mejora aislada del modelo; cualquier cambio futuro en la tolerancia al costo de falsos positivos debería re-evaluar este umbral.
+- La anomalía de latencia local detectada en *System Monitoring* no fue investigada a fondo por alcance del proyecto; queda como línea de trabajo futuro confirmar su origen.
 
 
 
@@ -609,51 +697,3 @@ El equipo se conforma por:
 * **María Paula Elizondo Herrera**: modelos Decision Tree y Random Forest.
 
 El resto de las secciones del proyecto (ingestión de datos, feature engineering, MLflow tracking/registry, análisis de umbral, evaluación del modelo ganador, Docker, API y testing) fueron desarrolladas en conjunto por ambos integrantes.
-
-
-
----
-
-
-
-## Comandos reproducibles
-
-### Entorno virtual
-* python -m venv mlflow-project
-* mlflow-project/Scripts/activate
-* pip install -r requirements.txt
-
-
-### Datos
-* python src/ingestion/ingest.py
-* python src/quality/clean.py
-* python src/quality/gates.py
-* python tests/test_clean_gates.py
-
-
-### MLflow
-* mlflow server --backend-store-uri sqlite:///bank.db --default-artifact-root ./mlartifacts --host 127.0.0.1 --port 5000
-
-
-### Experimentos y modelos
-* python src/training.py
-* python src/evalution/threshold_analysis.py
-* python export_model.py
-
-
-### Docker
-* docker build -t bank-marketing-api .
-* docker run -p 8000:8000 bank-marketing-api
-* docker start <id_contenedor>
-
-
-### Testing
-* pytest tests/test_api.py -v
-* pytest tests/test_data.py -v
-* pytest tests/test_model.py -v
-
-O bien, para correr todos:
-
-* pytest tests/ -v
-
----
