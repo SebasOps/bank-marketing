@@ -158,6 +158,11 @@ def check_no_extreme_outliers(df, reference_df, iqr_multiplier=3):
     dinámicamente sobre reference_df (rango intercuartílico x3, más laxo que
     el estándar 1.5 para capturar solo valores verdaderamente extremos, no
     cualquier variación normal de muestreo).
+
+    Columnas con IQR=0 en la referencia (ej. 'pdays', 'previous', dominadas
+    por un único valor) se excluyen: un rango de ancho cero no es una medida
+    útil de "extremo", marcaría como outlier cualquier valor distinto al
+    modo, generando falsos positivos.
     """
     numeric_cols = reference_df.select_dtypes(include="number").columns
     errores = {}
@@ -167,6 +172,8 @@ def check_no_extreme_outliers(df, reference_df, iqr_multiplier=3):
             continue
         q1, q3 = reference_df[col].quantile([0.25, 0.75])
         iqr = q3 - q1
+        if iqr == 0:
+            continue
         lo, hi = q1 - iqr_multiplier * iqr, q3 + iqr_multiplier * iqr
         n_fuera = ((df[col] < lo) | (df[col] > hi)).sum()
         if n_fuera > 0:
