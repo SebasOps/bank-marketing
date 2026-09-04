@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score, f1_score
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent 
 sys.path.append(str(PROJECT_ROOT))   
 
+from src.quality.gates import data_quality_gates
 from src.pipelines.split import split_data
 from src.features.build_features import feature_selection, encode_target, build_pipeline
 from src.tracking.config import RANDOM_SEED, CLASS_BALANCED, INCLUIR_SMOTE_KNN, NO_INCLUIR_SMOTE_KNN, INCLUIR_ESCALADO, NO_INCLUIR_ESCALADO, get_data_version
@@ -29,6 +30,10 @@ mlflow.set_experiment("classification-bank-marketing")
 
 PROCESSED_PATH = PROJECT_ROOT / "data" / "processed" / "bank_marketing.csv"
 df = pd.read_csv(PROCESSED_PATH)
+
+# Data Quality Gates: valida el dataset antes de cualquier paso de
+# entrenamiento. Si alguna regla falla, detiene el pipeline aquí
+df = data_quality_gates(df)
 
 # Versión
 DATA_VERSION = get_data_version(PROCESSED_PATH)
