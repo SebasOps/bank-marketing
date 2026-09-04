@@ -3,12 +3,16 @@ Monitoreo black-box de la API: mide Latency, Throughput, Error Rate (via /predic
 y Availability (via /health) llamando a la API real desde afuera.
 Genera un único log: logs/api_monitor.jsonl
 """
+
+# Imports
 import sys, time, json, requests
 from pathlib import Path
 from datetime import datetime, timezone
 
+
 LOG_PATH = Path(__file__).resolve().parent.parent.parent / "logs" / "api_monitor.jsonl"
 LOG_PATH.parent.mkdir(exist_ok=True)
+
 
 # Payload de ejemplo representativo de un cliente real
 SAMPLE_PAYLOAD = {
@@ -18,9 +22,11 @@ SAMPLE_PAYLOAD = {
     "pdays": -1, "previous": 0, "poutcome": "unknown"
 }
 
+
 def log(entry: dict):
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
+
 
 def call_health(api_url):
     start = time.perf_counter()
@@ -33,11 +39,13 @@ def call_health(api_url):
         status_code = 0
     log({
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "target": api_url,
         "endpoint": "/health",
         "status_code": status_code,
         "available": ok,
         "latency_ms": round((time.perf_counter() - start) * 1000, 2),
     })
+
 
 def call_predict(api_url):
     start = time.perf_counter()
@@ -48,10 +56,12 @@ def call_predict(api_url):
         status_code = 0
     log({
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "target": api_url,
         "endpoint": "/predict",
         "status_code": status_code,
         "latency_ms": round((time.perf_counter() - start) * 1000, 2),
     })
+
 
 if __name__ == "__main__":
     api_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
