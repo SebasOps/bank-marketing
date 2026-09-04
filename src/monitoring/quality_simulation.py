@@ -76,7 +76,14 @@ def contaminate_schema_modification(df):
 # --------------------------------------------
 # Runner: aplica gates, captura resultado, registra incidente
 
-def run_gate_check(scenario_name, contaminated_df, reference_df, needs_type_coercion=False):
+def run_gate_check(scenario_name, contaminated_df, reference_df, gate_fn, needs_type_coercion=False):
+    """
+    Corre UN gate específico (no toda la cadena de production_quality_gates),
+    para que cada escenario de contaminación pruebe exclusivamente el gate
+    diseñado para detectarlo, sin que otro gate lo intercepte antes por
+    coincidencia (ej. un outlier natural del batch disparando
+    check_no_extreme_outliers antes de que check_valid_categories corra).
+    """
     df_to_check = resolve_types(contaminated_df) if needs_type_coercion else contaminated_df
 
     entry = {
@@ -84,11 +91,12 @@ def run_gate_check(scenario_name, contaminated_df, reference_df, needs_type_coer
         "scenario": scenario_name,
         "n_rows": len(df_to_check),
     }
+
     try:
-        production_quality_gates(df_to_check, reference_df)
+        gate_fn(df_to_check, reference_df) if gate_fn.__code__.co_argcount == 2 else gate_fn(df_to_check)
         entry["detected"] = False
         entry["blocked"] = False
-        entry["message"] = "Gates pasaron sin detectar el defecto"
+        entry["message"] = "El gate correspondiente no detectó el defecto"
         print(f"[FALLO DEL GATE] {scenario_name}: no se detectó el defecto")
     except AssertionError as e:
         entry["detected"] = True
@@ -113,19 +121,36 @@ if __name__ == "__main__":
     REFERENCE = X_train.reset_index(drop=True)
     BATCH_LIMPIO = X_test.reset_index(drop=True).head(200)  # batch pequeño representativo, sin contaminar
 
+    # Validación de baseline: el batch limpio, sin contaminar, DEBE pasar los
+    # gates. Si falla acá, cualquier resultado "detectado" en los escenarios
+    # de abajo es sospechoso (no se sabe si detectó la contaminación o ruido
+    # preexistente del batch).
+    try:
+        production_quality_gates(BATCH_LIMPIO, REFERENCE)
+        print("[OK] Baseline (batch limpio) pasa los gates sin alertas falsas.\n")
+    except AssertionError as e:
+        print(f"[ADVERTENCIA] El batch limpio NO pasa los gates: {e}")
+        print("Los resultados de los escenarios de abajo pueden no ser confiables.\n")
+
+    from src.quality.gates import (
+        check_no_missing_values, check_no_duplicates,
+        check_no_extreme_outliers, check_valid_categories,
+        expected_feature_columns,
+    )
+
     escenarios = [
-        ("missing_values", contaminate_missing_values(BATCH_LIMPIO), False),
-        ("duplicated_rows", contaminate_duplicates(BATCH_LIMPIO), False),
-        ("extreme_outlier", contaminate_extreme_outlier(BATCH_LIMPIO), False),
-        ("incorrect_datatype", contaminate_incorrect_datatype(BATCH_LIMPIO), True),
-        ("unknown_category", contaminate_unknown_category(BATCH_LIMPIO), False),
-        ("schema_modification", contaminate_schema_modification(BATCH_LIMPIO), False),
+        ("missing_values", contaminate_missing_values(BATCH_LIMPIO), check_no_missing_values, False),
+        ("duplicated_rows", contaminate_duplicates(BATCH_LIMPIO), check_no_duplicates, False),
+        ("extreme_outlier", contaminate_extreme_outlier(BATCH_LIMPIO), check_no_extreme_outliers, False),
+        ("incorrect_datatype", contaminate_incorrect_datatype(BATCH_LIMPIO), check_no_missing_values, True),
+        ("unknown_category", contaminate_unknown_category(BATCH_LIMPIO), check_valid_categories, False),
+        ("schema_modification", contaminate_schema_modification(BATCH_LIMPIO), expected_feature_columns, False),
     ]
 
     print("=== Simulación de contaminación de calidad (Q) ===\n")
     resultados = []
-    for nombre, df_contaminado, necesita_coercion in escenarios:
-        resultado = run_gate_check(nombre, df_contaminado, REFERENCE, necesita_coercion)
+    for nombre, df_contaminado, gate_fn, necesita_coercion in escenarios:
+        resultado = run_gate_check(nombre, df_contaminado, REFERENCE, gate_fn, necesita_coercion)
         resultados.append(resultado)
 
     n_detectados = sum(r["detected"] for r in resultados)
